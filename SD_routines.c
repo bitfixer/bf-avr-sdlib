@@ -28,7 +28,6 @@
 #include "SPI_routines.h"
 #include "SD_routines.h"
 #include "UART_routines.h"
-//#include "IEEE488.h"
 
 //******************************************************************
 //Function	: to initialize the SD/SDHC card in SPI mode

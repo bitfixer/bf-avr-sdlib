@@ -43,11 +43,11 @@ void uart0_init(unsigned int ubrr)
  UCSR0B = 0x18;
  */
  
- //UBRR0H = (unsigned char)(ubrr>>8);
- //UBRR0L = (unsigned char)ubrr;
+ UBRR0H = (unsigned char)(ubrr>>8);
+ UBRR0L = (unsigned char)ubrr;
  
- UBRR0H = 0;
- UBRR0L = 25;
+ //UBRR0H = 0;
+ //UBRR0L = 25;
  
  UCSR0A = 0x00;
  UCSR0B = (1<<RXEN0)|(1<<TXEN0);
@@ -128,5 +128,3 @@ void transmitString(unsigned char* string)
   while (*string)
    transmitByte(*string++);
 }
-
-//************ END ***** www.dharmanitech.com *******

@@ -58,5 +58,3 @@ data = SPDR;
 // Return data register
 return data;
 }
-
-//******** END ****** www.dharmanitech.com *****

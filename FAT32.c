@@ -29,7 +29,7 @@
 #include "FAT32.h"
 #include "UART_routines.h"
 #include "SD_routines.h"
-#include "IEEE488.h"
+//#include "IEEE488.h"
 
 //***************************************************************************
 //Function: to read data from boot sector of SD card, to determine important
@@ -181,6 +181,7 @@ if((FS->leadSignature != 0x41615252) || (FS->structureSignature != 0x61417272) |
 //        print file/dir list of the root directory, if flag = GET_LIST
 //		  Delete the file mentioned in arg#2, if flag = DELETE
 //****************************************************************************
+/*
 struct dir_Structure* ListFilesIEEE ()
 {
 unsigned long cluster, sector, firstSector, firstCluster, nextCluster;
@@ -353,6 +354,7 @@ while(1)
 
 return 0;
 }
+*/
 
 struct dir_Structure* findFilesL (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname)
 {
@@ -1153,6 +1155,7 @@ while(1)
 //return: none
 //************************************************************************************
 
+/*
 void writeFileFromIEEE (unsigned char *fileName, unsigned long StartCluster)
 {
 unsigned char j, data, error, fileCreatedFlag = 0, start = 0, appendFile = 0, sectorEndFlag = 0, sector;
@@ -1193,13 +1196,6 @@ if (fileName[11] != 0)
     num_long_entries = ((j - fname_remainder) / 13) + 1;
     transmitByte('0'+num_long_entries);
     curr_fname_pos = 0;
-    
-    /*
-    for (j = fname_len+1; j < 39; j++)
-    {
-        fileName[j] = 0xffff;
-    }
-    */
     
     for (j = 0; j < fname_len+1; j++)
     {
@@ -1304,6 +1300,7 @@ while(1)
     wait_for_dav_high();
     PORTC = NOT_NDAC;
 }        
+
 
 getSetFreeCluster (NEXT_FREE, SET, cluster); //update FSinfo next free cluster entry
 
@@ -1464,7 +1461,7 @@ while(1)
  
  return;
 }
-
+*/
 
 //***************************************************************************
 //Function: to search for the next free cluster in the root directory
@@ -1556,35 +1553,6 @@ TX_NEWLINE;
 transmitString_F(PSTR(" Free Memory: "));
 displayMemory (HIGH, freeMemory);
 TX_NEWLINE; 
-}
-*/
-
-//************************************************************
-//Function: To convert the unsigned long value of memory into 
-//          text string and send to UART
-//Arguments: 1. unsigned char flag. If flag is HIGH, memory will be displayed in KBytes, else in Bytes. 
-//			 2. unsigned long memory value
-//return: none
-//************************************************************
-
-/*
-void displayMemory (unsigned char flag, unsigned long memory)
-{
-  unsigned char memoryString[] = "              Bytes"; //19 character long string for memory display
-  unsigned char i;
-  for(i=12; i>0; i--) //converting freeMemory into ASCII string
-  {
-    if(i==5 || i==9) 
-	{
-	   memoryString[i-1] = ',';  
-	   i--;
-	}
-    memoryString[i-1] = (memory % 10) | 0x30;
-    memory /= 10;
-	if(memory == 0) break;
-  }
-  if(flag == HIGH)  memoryString[13] = 'K';
-  transmitString(memoryString);
 }
 */
 
