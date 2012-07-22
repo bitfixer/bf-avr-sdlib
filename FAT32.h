@@ -119,6 +119,14 @@ struct dir_Longentry_Structure{
     unsigned int LDIR_Name3[2];
 };
 
+// structure for file read information
+typedef struct _file_stat{
+    unsigned long currentCluster;
+    unsigned long fileSize;
+    unsigned long currentSector;
+    unsigned long byteCounter;
+    int sectorIndex;
+} file_stat;
 
 //Attribute definitions for file/directory
 #define ATTR_READ_ONLY     0x01
@@ -175,5 +183,8 @@ void displayMemory (unsigned char flag, unsigned long memory);
 void deleteFile (unsigned char *fileName);
 void freeMemoryUpdate (unsigned char flag, unsigned long size);
 unsigned char ChkSum (unsigned char *pFcbName);
+
+void startFileRead(struct dir_Structure *dirEntry, file_stat *thisFileStat);
+void getCurrentFileBlock(file_stat *thisFileStat);
 
 #endif

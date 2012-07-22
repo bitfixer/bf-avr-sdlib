@@ -173,6 +173,34 @@ unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, 
      return 0xffffffff;
 }
 
+void startFileRead(struct dir_Structure *dir, file_stat *thisFileStat)
+{
+    thisFileStat->currentCluster = (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
+    thisFileStat->fileSize = dir->fileSize;
+    thisFileStat->byteCounter = 0;
+    thisFileStat->currentSector = getFirstSector(thisFileStat->currentCluster);
+    thisFileStat->sectorIndex = 0;
+}
+
+void getCurrentFileBlock(file_stat *thisFileStat)
+{
+    // get block into buffer
+    SD_readSingleBlock(thisFileStat->currentSector + thisFileStat->sectorIndex);
+    thisFileStat->byteCounter += 512;
+    
+    // step to next sector
+    thisFileStat->sectorIndex = thisFileStat->sectorIndex + 1;
+    
+    if (thisFileStat->sectorIndex >= _sectorPerCluster)
+    {
+        // go to next cluster and reset counter
+        thisFileStat->currentCluster = getSetFreeCluster(thisFileStat->currentCluster, GET, 0);
+        thisFileStat->currentSector = getFirstSector(thisFileStat->currentCluster);
+        thisFileStat->sectorIndex = 0;
+    }
+    
+}
+
 struct dir_Structure* findFilesL (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname)
 {
 unsigned long cluster, sector, firstSector, firstCluster, nextCluster;
@@ -191,6 +219,7 @@ unsigned char wildcard;
 unsigned char temp, temp2;
 
 cluster = _rootCluster; //root cluster
+    
 is_long_entry = 0;
 for (i = 0; i < 32; i++)
 {
