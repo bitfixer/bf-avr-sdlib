@@ -186,5 +186,6 @@ unsigned char ChkSum (unsigned char *pFcbName);
 
 void startFileRead(struct dir_Structure *dirEntry, file_stat *thisFileStat);
 void getCurrentFileBlock(file_stat *thisFileStat);
+unsigned long getNextBlockAddress(file_stat *thisFileStat);
 
 #endif

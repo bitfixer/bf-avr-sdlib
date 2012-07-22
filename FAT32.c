@@ -184,21 +184,57 @@ void startFileRead(struct dir_Structure *dir, file_stat *thisFileStat)
 
 void getCurrentFileBlock(file_stat *thisFileStat)
 {
+    /*
+    unsigned char result;
+    
+    transmitString("in sector: ");
+    transmitHex(LONG, thisFileStat->currentSector);
+    transmitHex(INT, thisFileStat->sectorIndex);
     // get block into buffer
-    SD_readSingleBlock(thisFileStat->currentSector + thisFileStat->sectorIndex);
+    
+    result = SD_readSingleBlock(thisFileStat->currentSector);
+    
+    transmitString("result: ");
+    transmitHex(CHAR, result);
     thisFileStat->byteCounter += 512;
     
     // step to next sector
     thisFileStat->sectorIndex = thisFileStat->sectorIndex + 1;
+    thisFileStat->currentSector++;
     
     if (thisFileStat->sectorIndex >= _sectorPerCluster)
     {
         // go to next cluster and reset counter
-        thisFileStat->currentCluster = getSetFreeCluster(thisFileStat->currentCluster, GET, 0);
+        thisFileStat->currentCluster = getSetNextCluster(thisFileStat->currentCluster, GET, 0);
+        thisFileStat->currentSector = getFirstSector(thisFileStat->currentCluster);
+        thisFileStat->sectorIndex = 0;
+    }
+    */
+    
+    unsigned long nextBlockAddr;
+    nextBlockAddr = getNextBlockAddress(thisFileStat);
+    
+    SD_readSingleBlock(nextBlockAddr);
+}
+
+unsigned long getNextBlockAddress(file_stat *thisFileStat)
+{
+    unsigned long nextAddress;
+    
+    nextAddress = thisFileStat->currentSector;
+    thisFileStat->sectorIndex++;
+    thisFileStat->currentSector++;
+    thisFileStat->byteCounter += 512;
+    
+    if (thisFileStat->sectorIndex >= _sectorPerCluster)
+    {
+        // go to next cluster and reset counter
+        thisFileStat->currentCluster = getSetNextCluster(thisFileStat->currentCluster, GET, 0);
         thisFileStat->currentSector = getFirstSector(thisFileStat->currentCluster);
         thisFileStat->sectorIndex = 0;
     }
     
+    return nextAddress;
 }
 
 struct dir_Structure* findFilesL (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname)
