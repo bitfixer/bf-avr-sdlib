@@ -46,11 +46,11 @@ unsigned char getBootSectorData (void)
     _unusedSectors = 0;
 
     SD_readSingleBlock(0);
-    bpb = (struct BS_Structure *)buffer;
+    bpb = (struct BS_Structure *)_buffer;
 
     if(bpb->jumpBoot[0]!=0xE9 && bpb->jumpBoot[0]!=0xEB)   //check if it is boot sector
     {
-      mbr = (struct MBRinfo_Structure *) buffer;       //if it is not boot sector, it must be MBR
+      mbr = (struct MBRinfo_Structure *) _buffer;       //if it is not boot sector, it must be MBR
       
       if(mbr->signature != 0xaa55) return 1;       //if it is not even MBR then it's not FAT32
       	
@@ -58,7 +58,7 @@ unsigned char getBootSectorData (void)
       _unusedSectors = partition->firstSector; //the unused sectors, hidden to the FAT
       
       SD_readSingleBlock(partition->firstSector);//read the bpb sector
-      bpb = (struct BS_Structure *)buffer;
+      bpb = (struct BS_Structure *)_buffer;
       if(bpb->jumpBoot[0]!=0xE9 && bpb->jumpBoot[0]!=0xEB) return 1; 
     }
 
@@ -123,7 +123,7 @@ unsigned long getSetNextCluster (unsigned long clusterNumber,
     }
 
     //get the cluster address from the buffer
-    FATEntryValue = (unsigned long *) &buffer[FATEntryOffset];
+    FATEntryValue = (unsigned long *) &_buffer[FATEntryOffset];
 
     if(get_set == GET)
       return ((*FATEntryValue) & 0x0fffffff);
@@ -146,7 +146,7 @@ unsigned long getSetNextCluster (unsigned long clusterNumber,
 //********************************************************************************************
 unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, unsigned long FSEntry)
 {
-    struct FSInfo_Structure *FS = (struct FSInfo_Structure *) &buffer;
+    struct FSInfo_Structure *FS = (struct FSInfo_Structure *) &_buffer;
     unsigned char error;
 
     SD_readSingleBlock(_unusedSectors + 1);
@@ -209,7 +209,7 @@ while(1)
         SD_readSingleBlock (firstSector + sector);
         for(i = 0; i < _bytesPerSector; i += 32)
         {
-	    dir = (struct dir_Structure *) &buffer[i];
+	    dir = (struct dir_Structure *) &_buffer[i];
             transmitString(dir->name);
             
         if(dir->name[0] == EMPTY) //indicates end of the file list of the directory
@@ -340,7 +340,7 @@ while(1)
             {
                 done_long_entry_check = 0;
                 
-                longent = (struct dir_Longentry_Structure *) &buffer[i];
+                longent = (struct dir_Longentry_Structure *) &_buffer[i];
                 
                 ord = (longent->LDIR_Ord & 0x0F) - 1;
                 index = (13*ord);
@@ -1141,7 +1141,7 @@ unsigned long searchNextFreeCluster (unsigned long startCluster)
       SD_readSingleBlock(sector);
       for(i=0; i<128; i++)
       {
-       	 value = (unsigned long *) &buffer[i*4];
+       	 value = (unsigned long *) &_buffer[i*4];
          if(((*value) & 0x0fffffff) == 0)
             return(cluster+i);
       }  
