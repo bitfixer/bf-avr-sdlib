@@ -150,13 +150,13 @@ struct dir_Longentry_Structure{
 
 
 //************* external variables *************
-volatile unsigned long firstDataSector, rootCluster, totalClusters;
-volatile unsigned int  bytesPerSector, sectorPerCluster, reservedSectorCount;
-volatile unsigned long unusedSectors, appendFileSector, appendFileLocation, fileSize, appendStartCluster;
+volatile unsigned long _firstDataSector,     _rootCluster,        _totalClusters;
+volatile unsigned int  _bytesPerSector,      _sectorPerCluster,   _reservedSectorCount;
+volatile unsigned long _unusedSectors, _appendFileSector, _appendFileLocation, _fileSize, _appendStartCluster;
 
 //global flag to keep track of free cluster count updating in FSinfo sector
-unsigned char freeClusterCountUpdated;
-volatile unsigned long fileStartCluster;
+unsigned char _freeClusterCountUpdated;
+volatile unsigned long _fileStartCluster;
 
 
 //************* functions *************
