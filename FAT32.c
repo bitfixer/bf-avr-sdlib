@@ -184,33 +184,6 @@ void startFileRead(struct dir_Structure *dir, file_stat *thisFileStat)
 
 void getCurrentFileBlock(file_stat *thisFileStat)
 {
-    /*
-    unsigned char result;
-    
-    transmitString("in sector: ");
-    transmitHex(LONG, thisFileStat->currentSector);
-    transmitHex(INT, thisFileStat->sectorIndex);
-    // get block into buffer
-    
-    result = SD_readSingleBlock(thisFileStat->currentSector);
-    
-    transmitString("result: ");
-    transmitHex(CHAR, result);
-    thisFileStat->byteCounter += 512;
-    
-    // step to next sector
-    thisFileStat->sectorIndex = thisFileStat->sectorIndex + 1;
-    thisFileStat->currentSector++;
-    
-    if (thisFileStat->sectorIndex >= _sectorPerCluster)
-    {
-        // go to next cluster and reset counter
-        thisFileStat->currentCluster = getSetNextCluster(thisFileStat->currentCluster, GET, 0);
-        thisFileStat->currentSector = getFirstSector(thisFileStat->currentCluster);
-        thisFileStat->sectorIndex = 0;
-    }
-    */
-    
     unsigned long nextBlockAddr;
     nextBlockAddr = getNextBlockAddress(thisFileStat);
     
