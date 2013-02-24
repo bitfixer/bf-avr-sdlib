@@ -59,7 +59,6 @@ void uart0_init(unsigned int ubrr)
 //**************************************************
 //Function to receive a single byte
 //*************************************************
-/*
 unsigned char receiveByte( void )
 {
 	unsigned char data, status;
@@ -71,7 +70,6 @@ unsigned char receiveByte( void )
 	
 	return(data);
 }
-*/
 //***************************************************
 //Function to transmit a single byte
 //***************************************************
