@@ -210,6 +210,122 @@ unsigned long getNextBlockAddress(file_stat *thisFileStat)
     return nextAddress;
 }
 
+struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster)
+{
+    unsigned long firstSector;
+    unsigned long cluster;
+    unsigned long sector;
+    struct dir_Structure *dir;
+    struct dir_Longentry_Structure *longent;
+    unsigned char is_long_entry;
+    unsigned char is_long_entry_match;
+    unsigned char lentstr[32];
+    unsigned char done_long_entry_check;
+    unsigned char this_long_filename_length;
+    unsigned char k;
+    unsigned char ord;
+    
+    int b;
+    
+    memset(lentstr, 0, 32);
+    
+    is_long_entry = 0;
+    is_long_entry_match = 1;
+    
+    cluster = firstCluster;
+    while (1)
+    {
+        // first sector in the current cluster
+        firstSector = getFirstSector(cluster);
+        
+        // loop through sectors in this cluster
+        for(sector = 0; sector < _sectorPerCluster; sector++)
+        {
+            SD_readSingleBlock (firstSector + sector);
+            for(b = 0; b < _bytesPerSector; b += 32)
+            {
+                dir = (struct dir_Structure *) &_buffer[b];
+                
+                if(dir->name[0] == EMPTY) //indicates end of the file list of the directory
+                {
+                    // file does not exist
+                    return 0;   
+                }
+                
+                if((dir->name[0] != DELETED) && (dir->attrib != ATTR_LONG_NAME))
+                {
+                    transmitString(dir->name);
+                    transmitString("\r\n");
+                    
+                    // clear out the long entry string
+                    if (is_long_entry == 1)
+                    {
+                        transmitString(lentstr);
+                        transmitString("\r\n");
+                        memset(lentstr, 0, 32);
+                    }
+                    is_long_entry = 0;
+                    is_long_entry_match = 1;
+                    
+                    
+                }
+                else if (dir->attrib == ATTR_LONG_NAME)
+                {
+                    is_long_entry = 1;
+                    if (is_long_entry_match == 1)
+                    {
+                        done_long_entry_check = 0;
+                        
+                        longent = (struct dir_Longentry_Structure *) &_buffer[b];
+                        
+                        ord = (longent->LDIR_Ord & 0x0F) - 1;
+                        this_long_filename_length = (13*ord);
+                        
+                        for (k = 0; k < 5; k++)
+                        {
+                            lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name1[k];
+                            this_long_filename_length++;
+                        }
+                        
+                        if (is_long_entry_match == 1 && done_long_entry_check == 0)
+                        {
+                            for (k = 0; k < 6; k++)
+                            {
+                                lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name2[k];
+                                this_long_filename_length++;
+                            }
+                        }
+                        
+                        if (is_long_entry_match == 1 && done_long_entry_check == 0)
+                        {
+                            for (k = 0; k < 2; k++)
+                            {
+                                lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name3[k];
+                                this_long_filename_length++;
+                            }
+                        }
+                        
+                    }
+                }
+                
+            }
+        }
+        
+        
+        cluster = (getSetNextCluster (cluster, GET, 0));
+        
+        if(cluster > 0x0ffffff6)
+        {
+            return 0;
+        }
+        if(cluster == 0)
+        {
+            transmitString_F(PSTR("Error in getting cluster"));
+            return 0;
+        }
+    }
+}
+
 struct dir_Structure* findFilesL (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname)
 {
 unsigned long cluster, sector, firstSector, firstCluster, nextCluster;
@@ -517,17 +633,6 @@ void openFile(unsigned char *fileName, unsigned long *startcluster)
     unsigned long cluster, nextCluster, prevCluster, firstSector, clusterCount, extraMemory;
     int filename_position = 0;
 
-    // for testing only
-    // testing only
-    /*
-    fileName[filename_position++] = 'B';
-    fileName[filename_position++] = '.';
-    fileName[filename_position++] = 'P';
-    fileName[filename_position++] = 'R';
-    fileName[filename_position++] = 'G';
-    fileName[filename_position] = 0;
-    */
-
     j = readFile (VERIFY, fileName);
 
     if(j == 1) 
@@ -537,18 +642,7 @@ void openFile(unsigned char *fileName, unsigned long *startcluster)
         j = 0;
     }
     
-    /*
-    if(j == 2)
-    { 
-       return; //invalid file name
-    }
-    else
-    {
-    */
-      //TX_NEWLINE;
-      //transmitString_F(PSTR(" Creating File.."));
-
-      cluster = getSetFreeCluster (NEXT_FREE, GET, 0);
+    cluster = getSetFreeCluster (NEXT_FREE, GET, 0);
       if(cluster > _totalClusters)
          cluster = _rootCluster;
 
@@ -564,11 +658,6 @@ void openFile(unsigned char *fileName, unsigned long *startcluster)
       firstClusterHigh = (unsigned int) ((cluster & 0xffff0000) >> 16 );
       firstClusterLow = (unsigned int) ( cluster & 0x0000ffff);
       _fileSize = 0;
-    //}
-
-    //transmitString_F(PSTR("first cluster is: "));
-    //transmitHex(LONG, cluster);
-    //TX_NEWLINE;
     
     _fileStartCluster = cluster;
 }

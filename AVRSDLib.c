@@ -21,7 +21,7 @@
 */
 
 #define F_CPU 8000000UL		//freq 8 MHz
-#define BAUD 38400
+#define BAUD 19200
 #define MYUBRR F_CPU/16/BAUD-1
 #include <avr/io.h>
 #include <avr/pgmspace.h>
@@ -72,7 +72,7 @@ int main(void)
     
     init_devices();
     
-    cardType = 0;
+    int cardType = 0;
 
     struct dir_Structure *dir;
     unsigned long cluster, byteCounter = 0, fileSize, firstSector;
@@ -113,7 +113,8 @@ int main(void)
         progname[2] = 'R';
         progname[3] = 'M';
         progname[4] = '*';
-        dir = findFilesL(GET_FILE, progname, 0);
+        //dir = findFilesL(GET_FILE, progname, 0);
+        dir = findFiles2(GET_FILE, progname, 0, _rootCluster);
         
         if (dir != 0)
         {

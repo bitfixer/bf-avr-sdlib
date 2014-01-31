@@ -128,6 +128,11 @@ typedef struct _file_stat{
     int sectorIndex;
 } file_stat;
 
+typedef struct _dir_position {
+    unsigned long cluster;
+    unsigned long sector;
+};
+
 //Attribute definitions for file/directory
 #define ATTR_READ_ONLY     0x01
 #define ATTR_HIDDEN        0x02
@@ -172,6 +177,7 @@ unsigned char getBootSectorData (void);
 unsigned long getFirstSector(unsigned long clusterNumber);
 unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, unsigned long FSEntry);
 struct dir_Structure* findFiles (unsigned char flag, unsigned char *fileName);
+struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster);
 unsigned long getSetNextCluster (unsigned long clusterNumber,unsigned char get_set,unsigned long clusterEntry);
 unsigned char readFile (unsigned char flag, unsigned char *fileName);
 unsigned char convertFileName (unsigned char *fileName);

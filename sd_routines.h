@@ -32,8 +32,8 @@
 #define FAT_TESTING_ONLY         
 
 //use following macros if PB1 pin is used for Chip Select of SD
-#define SD_CS_ASSERT     PORTB &= ~0x02
-#define SD_CS_DEASSERT   PORTB |= 0x02
+#define SD_CS_ASSERT     PORTB &= ~0x04
+#define SD_CS_DEASSERT   PORTB |= 0x04
 
 //SD commands, many of these are not used here
 #define GO_IDLE_STATE            0

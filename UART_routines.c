@@ -63,10 +63,10 @@ unsigned char receiveByte( void )
 {
 	unsigned char data, status;
 	
-	while(!(UCSRA & (1<<RXC))); 	// Wait for incomming data
+	while(!(UCSR0A & (1<<RXC0))); 	// Wait for incomming data
 	
-	status = UCSRA;
-	data = UDR;
+	status = UCSR0A;
+	data = UDR0;
 	
 	return(data);
 }
