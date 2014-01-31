@@ -218,19 +218,21 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
     struct dir_Structure *dir;
     struct dir_Longentry_Structure *longent;
     unsigned char is_long_entry;
-    unsigned char is_long_entry_match;
     unsigned char lentstr[32];
     unsigned char done_long_entry_check;
     unsigned char this_long_filename_length;
     unsigned char k;
     unsigned char ord;
+    unsigned char cmp_length;
+    int result;
+    
+    cmp_length = 4;
     
     int b;
     
     memset(lentstr, 0, 32);
     
     is_long_entry = 0;
-    is_long_entry_match = 1;
     
     cluster = firstCluster;
     while (1)
@@ -257,55 +259,66 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
                     transmitString(dir->name);
                     transmitString("\r\n");
                     
+                    if (cmp_long_fname == 1)
+                    {
+                        transmitString("cmplongfname\r\n");
+                        if (is_long_entry == 1)
+                        {
+                            transmitString("longentrycmp\r\n");
+                            transmitString(lentstr);
+                            transmitString("\r\n");
+                            
+                            result = strncmp(fileName, lentstr, cmp_length);
+                            if (result == 0)
+                            {
+                                transmitString("lent match\r\n");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        result = strncmp(fileName, dir->name, cmp_length);
+                        if (result == 0)
+                        {
+                            transmitString("reg match\r\n");
+                        }
+                    }
+                    
                     // clear out the long entry string
                     if (is_long_entry == 1)
                     {
-                        transmitString(lentstr);
-                        transmitString("\r\n");
                         memset(lentstr, 0, 32);
                     }
                     is_long_entry = 0;
-                    is_long_entry_match = 1;
-                    
-                    
                 }
                 else if (dir->attrib == ATTR_LONG_NAME)
                 {
+                    transmitString("lent\r\n");
                     is_long_entry = 1;
-                    if (is_long_entry_match == 1)
+                    
+                    longent = (struct dir_Longentry_Structure *) &_buffer[b];
+                    
+                    ord = (longent->LDIR_Ord & 0x0F) - 1;
+                    this_long_filename_length = (13*ord);
+                    
+                    for (k = 0; k < 5; k++)
                     {
-                        done_long_entry_check = 0;
-                        
-                        longent = (struct dir_Longentry_Structure *) &_buffer[b];
-                        
-                        ord = (longent->LDIR_Ord & 0x0F) - 1;
-                        this_long_filename_length = (13*ord);
-                        
-                        for (k = 0; k < 5; k++)
-                        {
-                            lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name1[k];
-                            this_long_filename_length++;
-                        }
-                        
-                        if (is_long_entry_match == 1 && done_long_entry_check == 0)
-                        {
-                            for (k = 0; k < 6; k++)
-                            {
-                                lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name2[k];
-                                this_long_filename_length++;
-                            }
-                        }
-                        
-                        if (is_long_entry_match == 1 && done_long_entry_check == 0)
-                        {
-                            for (k = 0; k < 2; k++)
-                            {
-                                lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name3[k];
-                                this_long_filename_length++;
-                            }
-                        }
-                        
+                        lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name1[k];
+                        this_long_filename_length++;
                     }
+                    
+                    for (k = 0; k < 6; k++)
+                    {
+                        lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name2[k];
+                        this_long_filename_length++;
+                    }
+                
+                    for (k = 0; k < 2; k++)
+                    {
+                        lentstr[this_long_filename_length] = (unsigned char)longent->LDIR_Name3[k];
+                        this_long_filename_length++;
+                    }
+                    
                 }
                 
             }
