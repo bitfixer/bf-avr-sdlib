@@ -219,6 +219,7 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
     struct dir_Longentry_Structure *longent;
     unsigned char is_long_entry;
     unsigned char lentstr[32];
+    unsigned char *ustr;
     unsigned char done_long_entry_check;
     unsigned char this_long_filename_length;
     unsigned char k;
@@ -233,6 +234,11 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
     memset(lentstr, 0, 32);
     
     is_long_entry = 0;
+    
+    // convert filename to uppercase
+    fileName = strupr(fileName);
+    transmitString(fileName);
+    transmitString("\r\n");
     
     cluster = firstCluster;
     while (1)
@@ -268,10 +274,16 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
                             transmitString(lentstr);
                             transmitString("\r\n");
                             
-                            result = strncmp(fileName, lentstr, cmp_length);
+                            ustr = strupr((unsigned char *)lentstr);
+                            transmitString(ustr);
+                            transmitString("\r\n");
+                            
+                            result = strncmp(fileName, ustr, cmp_length);
                             if (result == 0)
                             {
+                                // found the file, long entry match
                                 transmitString("lent match\r\n");
+                                return dir;
                             }
                         }
                     }
@@ -280,7 +292,9 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
                         result = strncmp(fileName, dir->name, cmp_length);
                         if (result == 0)
                         {
+                            // found the file, regular match
                             transmitString("reg match\r\n");
+                            return dir;
                         }
                     }
                     
@@ -324,14 +338,17 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
             }
         }
         
-        
+        transmitString("get next cluster: ");
         cluster = (getSetNextCluster (cluster, GET, 0));
+        transmitHex(LONG, cluster);
+        transmitString("\r\n");
         
-        if(cluster > 0x0ffffff6)
+        // last cluster on the card
+        if (cluster > 0x0ffffff6)
         {
             return 0;
         }
-        if(cluster == 0)
+        if (cluster == 0)
         {
             transmitString_F(PSTR("Error in getting cluster"));
             return 0;

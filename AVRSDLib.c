@@ -108,11 +108,12 @@ int main(void)
         error = getBootSectorData (); //read boot sector and keep necessary data in global variables
     
         // look for firmware file
-        progname[0] = 'A';
-        progname[1] = 'D';
-        progname[2] = 'V';
-        progname[3] = 'E';
+        progname[0] = 'a';
+        progname[1] = 'C';
+        progname[2] = 'Z';
+        progname[3] = 'y';
         progname[4] = '*';
+        progname[5] = 0;
         //dir = findFilesL(GET_FILE, progname, 0);
         dir = findFiles2(GET_FILE, progname, 0, _rootCluster);
         
@@ -129,5 +130,10 @@ int main(void)
     else
     {
         transmitString("no card found.");
+    }
+    
+    while(1)
+    {
+        asm("nop;");
     }
 }
