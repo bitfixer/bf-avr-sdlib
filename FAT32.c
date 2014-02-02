@@ -656,24 +656,24 @@ return 0;
 }
 
 // open a new file for writing
-void openFileForWriting(unsigned char *fileName)
+void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
 {
     unsigned long cluster;
     
     // use existing buffer for filename
     _filePosition.fileName = _longEntryString;
     memset(_filePosition.fileName, 0, 32);
-    memcpy(_filePosition.fileName, fileName, 12);
+    memcpy(_filePosition.fileName, fileName, 11);
     
     //transmitString("total clusters: ");
-    transmitHex(LONG, _totalClusters);
-    transmitString("\r\n");
+    //transmitHex(LONG, _totalClusters);
+    //transmitString("\r\n");
     
     // find the start cluster for this file
     cluster = getSetFreeCluster(NEXT_FREE, GET, 0);
-    transmitString("cluster nextfree: ");
-    transmitHex(LONG, cluster);
-    transmitString("\r\n");
+    //transmitString("cluster nextfree: ");
+    //transmitHex(LONG, cluster);
+    //transmitString("\r\n");
     
     if (cluster > _totalClusters)
     {
@@ -696,6 +696,7 @@ void openFileForWriting(unsigned char *fileName)
     _filePosition.cluster = cluster;
     _filePosition.fileSize = 0;
     _filePosition.sector = getFirstSector(_filePosition.startCluster);
+    _filePosition.dirStartCluster = dirCluster;
     transmitString("sector: ");
     transmitHex(LONG, _filePosition.sector);
     transmitString("\r\n");
@@ -730,7 +731,8 @@ void closeFile()
     // set next free cluster in FAT
     getSetFreeCluster (NEXT_FREE, SET, _filePosition.cluster); //update FSinfo next free cluster entry
     
-    prevCluster = _rootCluster; //root cluster (change this for different directories)
+    //prevCluster = _rootCluster;
+    prevCluster = _filePosition.dirStartCluster;
     while(1)
     {
         firstSector = getFirstSector (prevCluster);
@@ -758,7 +760,7 @@ void closeFile()
                     transmitHex(LONG, sector);
                     transmitString("\r\n");
                     
-                    memcpy(dir->name, _filePosition.fileName, 12);
+                    memcpy(dir->name, _filePosition.fileName, 11);
                     
                     dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
                     dir->NTreserved = 0;			//always set to 0

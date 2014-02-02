@@ -89,6 +89,8 @@ int main(void)
     unsigned char initcard;
     unsigned char buscmd;
     
+    unsigned long dirCluster;
+    
     unsigned long cl;
     getting_filename = 0;
     filename_position = 0;
@@ -108,14 +110,14 @@ int main(void)
         error = getBootSectorData (); //read boot sector and keep necessary data in global variables
     
         // look for firmware file
-        progname[0] = 'l';
-        progname[1] = 'o';
-        progname[2] = 'n';
-        progname[3] = 'g';
+        progname[0] = 'F';
+        progname[1] = 'O';
+        progname[2] = 'L';
+        progname[3] = 'D';
         progname[4] = '*';
         progname[5] = 0;
         //dir = findFilesL(GET_FILE, progname, 0);
-        dir = findFiles2(GET_FILE, progname, 1, _rootCluster);
+        dir = findFiles2(GET_FILE, progname, 0, _rootCluster);
         transmitString("I am back");
         
         if (dir != 0)
@@ -141,8 +143,11 @@ int main(void)
             //unsigned long cluster = (unsigned long)dir->firstClusterLO;
             //dir = findFiles2(GET_FILE, progname, 1, cluster);
             
+            dirCluster = (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
             
-            
+            transmitString("dirCluster ");
+            transmitHex(LONG, dirCluster);
+            transmitString("\r\n");
             
         } 
         else 
@@ -158,15 +163,14 @@ int main(void)
         progname[5] = 'E';
         progname[6] = ' ';
         progname[7] = ' ';
-        progname[8] = ' ';
-        progname[9] = 'B';
-        progname[10] = 'I';
-        progname[11] = 'N';
+        progname[8] = 'B';
+        progname[9] = 'I';
+        progname[10] = 'N';
         
         for (i = 0; i < 5; i++)
         {
             progname[6] = 'A' + i;
-            openFileForWriting(progname);
+            openFileForWriting(progname, dirCluster);
             
             for (k = 0; k < 512; k++)
             {
