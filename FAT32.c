@@ -715,6 +715,15 @@ void writeBufferToFile(unsigned int bytesToWrite)
     transmitHex(LONG, _filePosition.dirStartCluster);
     transmitString("\r\n");
 
+    sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
+    
+    transmitString("sector: ");
+    transmitHex(LONG, sector);
+    transmitString("\r\n");
+    
+    error = SD_writeSingleBlock(sector);
+    _filePosition.fileSize += bytesToWrite;
+    _filePosition.sectorIndex++;
     
     if (_filePosition.sectorIndex == _sectorPerCluster)
     {
@@ -727,18 +736,6 @@ void writeBufferToFile(unsigned int bytesToWrite)
         getSetNextCluster(nextCluster, SET, EOF);
         _filePosition.cluster = nextCluster;
     }
-    
-    sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
-    
-    transmitString("sector: ");
-    transmitHex(LONG, sector);
-    transmitString("\r\n");
-    
-    error = SD_writeSingleBlock(sector);
-    _filePosition.fileSize += bytesToWrite;
-    _filePosition.sectorIndex++;
-    
-    // TODO: check next sector, cluster and all that
 }
 
 void closeFile()

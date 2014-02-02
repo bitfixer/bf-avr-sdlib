@@ -160,7 +160,7 @@ int main(void)
         progname[2] = 'F';
         progname[3] = 'I';
         progname[4] = 'L';
-        progname[5] = 'B';
+        progname[5] = 'F';
         progname[6] = ' ';
         progname[7] = ' ';
         progname[8] = 'B';
@@ -172,14 +172,13 @@ int main(void)
             progname[6] = 'A' + i;
             openFileForWriting(progname, dirCluster);
             
-            for (k = 0; k < 512; k++)
-            {
-                _buffer[k] = k % 256;
-            }
-            
             transmitString("writing..\r\n");
-            for (k = 0; k < 7; k++)
+            for (j = 0; j < 12; j++)
             {
+                for (k = 0; k < 512; k++)
+                {
+                    _buffer[k] = k % 256;
+                }
                 writeBufferToFile(512);
             }
             closeFile();
