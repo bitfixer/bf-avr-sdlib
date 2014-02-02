@@ -695,26 +695,48 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
     _filePosition.startCluster = cluster;
     _filePosition.cluster = cluster;
     _filePosition.fileSize = 0;
-    _filePosition.sector = getFirstSector(_filePosition.startCluster);
+    //_filePosition.sector = getFirstSector(_filePosition.startCluster);
+    _filePosition.sectorIndex = 0;
     _filePosition.dirStartCluster = dirCluster;
-    transmitString("sector: ");
-    transmitHex(LONG, _filePosition.sector);
-    transmitString("\r\n");
-    transmitString("done\r\n");
+    //transmitString("sector: ");
+    //transmitHex(LONG, _filePosition.sector);
+    //transmitString("\r\n");
+    //transmitString("done\r\n");
 }
 
-void writeBufferToFile()
+void writeBufferToFile(unsigned int bytesToWrite)
 {
     unsigned char error;
+    unsigned long nextCluster;
+    unsigned long sector;
     // write a block to current file
     
+    transmitString("dircluster: ");
+    transmitHex(LONG, _filePosition.dirStartCluster);
+    transmitString("\r\n");
+
+    
+    if (_filePosition.sectorIndex == _sectorPerCluster)
+    {
+        _filePosition.sectorIndex = 0;
+        // get the next free cluster
+        nextCluster = searchNextFreeCluster(_filePosition.cluster);
+        // link the previous cluster
+        getSetNextCluster(_filePosition.cluster, SET, nextCluster);
+        // set the last cluster with EOF
+        getSetNextCluster(nextCluster, SET, EOF);
+        _filePosition.cluster = nextCluster;
+    }
+    
+    sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
+    
     transmitString("sector: ");
-    transmitHex(LONG, _filePosition.sector);
+    transmitHex(LONG, sector);
     transmitString("\r\n");
     
-    error = SD_writeSingleBlock(_filePosition.sector);
-    _filePosition.fileSize += 512;
-    _filePosition.sector++;
+    error = SD_writeSingleBlock(sector);
+    _filePosition.fileSize += bytesToWrite;
+    _filePosition.sectorIndex++;
     
     // TODO: check next sector, cluster and all that
 }
@@ -733,16 +755,21 @@ void closeFile()
     
     //prevCluster = _rootCluster;
     prevCluster = _filePosition.dirStartCluster;
+    transmitString("prevcluster: ");
+    transmitHex(LONG, prevCluster);
+    transmitString("\r\n");
+    
     while(1)
     {
         firstSector = getFirstSector (prevCluster);
         
         for(sector = 0; sector < _sectorPerCluster; sector++)
         {
-            transmitString("currsector: ");
-            transmitHex(LONG, sector);
-            transmitString("\r\n");
+            
             SD_readSingleBlock (firstSector + sector);
+            transmitString("currsector: ");
+            transmitHex(LONG, firstSector+sector);
+            transmitString("\r\n");
             
             for( i = 0; i < _bytesPerSector; i += 32)
             {
@@ -756,8 +783,8 @@ void closeFile()
                 
                 if((dir->name[0] == EMPTY) || (dir->name[0] == DELETED))  //looking for an empty slot to enter file info
                 {
-                    transmitString("dir sector: ");
-                    transmitHex(LONG, sector);
+                    transmitString("dir byte: ");
+                    transmitHex(INT, i);
                     transmitString("\r\n");
                     
                     memcpy(dir->name, _filePosition.fileName, 11);

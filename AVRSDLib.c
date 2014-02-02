@@ -160,7 +160,7 @@ int main(void)
         progname[2] = 'F';
         progname[3] = 'I';
         progname[4] = 'L';
-        progname[5] = 'E';
+        progname[5] = 'B';
         progname[6] = ' ';
         progname[7] = ' ';
         progname[8] = 'B';
@@ -178,7 +178,10 @@ int main(void)
             }
             
             transmitString("writing..\r\n");
-            writeBufferToFile();
+            for (k = 0; k < 7; k++)
+            {
+                writeBufferToFile(512);
+            }
             closeFile();
         }
     }

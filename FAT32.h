@@ -133,6 +133,7 @@ typedef struct _file_position {
     unsigned long startCluster;
     unsigned long cluster;
     unsigned long dirStartCluster;
+    unsigned char sectorIndex;
     unsigned long sector;
     unsigned long fileSize;
     unsigned int byte;
