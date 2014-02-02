@@ -128,10 +128,13 @@ typedef struct _file_stat{
     int sectorIndex;
 } file_stat;
 
-typedef struct _dir_position {
+typedef struct _file_position {
+    unsigned long startCluster;
     unsigned long cluster;
     unsigned long sector;
-};
+    unsigned long fileSize;
+    unsigned int byte;
+} file_position;
 
 //Attribute definitions for file/directory
 #define ATTR_READ_ONLY     0x01
@@ -170,6 +173,9 @@ volatile unsigned long _unusedSectors, _appendFileSector, _appendFileLocation, _
 //global flag to keep track of free cluster count updating in FSinfo sector
 unsigned char _freeClusterCountUpdated;
 volatile unsigned long _fileStartCluster;
+
+volatile unsigned char _longEntryString[32];
+volatile file_position _filePosition;
 
 
 //************* functions *************

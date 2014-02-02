@@ -108,25 +108,58 @@ int main(void)
         error = getBootSectorData (); //read boot sector and keep necessary data in global variables
     
         // look for firmware file
-        progname[0] = 'a';
-        progname[1] = 'C';
-        progname[2] = 'Z';
-        progname[3] = 'y';
+        progname[0] = 'l';
+        progname[1] = 'o';
+        progname[2] = 'n';
+        progname[3] = 'g';
         progname[4] = '*';
         progname[5] = 0;
         //dir = findFilesL(GET_FILE, progname, 0);
-        dir = findFiles2(GET_FILE, progname, 0, _rootCluster);
+        dir = findFiles2(GET_FILE, progname, 1, _rootCluster);
+        transmitString("I am back");
         
         if (dir != 0)
         {
             // found firmware file
-            transmitString("found firmware..");
+            /*
+            transmitString("found directory..\r\n");
+            
+            transmitString("firstClusterHI: ");
+            transmitHex(INT, dir->firstClusterHI);
+            transmitString("\r\n");
+            
+            transmitString("firstClusterLO: ");
+            transmitHex(INT, dir->firstClusterLO);
+            transmitString("\r\n");
+            
+            
+            transmitString("fileSize: ");
+            transmitHex(LONG, dir->fileSize);
+            transmitString("\r\n");
+            */
+            
+            //unsigned long cluster = (unsigned long)dir->firstClusterLO;
+            //dir = findFiles2(GET_FILE, progname, 1, cluster);
+            
+            
+            
+            
         } 
         else 
         {
-            transmitString("no firmware.");
+            //transmitString("no firmware.");
         }
-    }   
+        
+        
+        openFileForWriting("blah");
+        for (k = 0; k < 512; k++)
+        {
+            _buffer[k] = k % 256;
+        }
+        transmitString("writing..\r\n");
+        writeBufferToFile();
+        closeFile();
+    }
     else
     {
         transmitString("no card found.");
