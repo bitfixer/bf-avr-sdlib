@@ -660,6 +660,11 @@ void openFileForWriting(unsigned char *fileName)
 {
     unsigned long cluster;
     
+    // use existing buffer for filename
+    _filePosition.fileName = _longEntryString;
+    memset(_filePosition.fileName, 0, 32);
+    memcpy(_filePosition.fileName, fileName, 11);
+    
     //transmitString("total clusters: ");
     transmitHex(LONG, _totalClusters);
     transmitString("\r\n");
@@ -721,7 +726,7 @@ void closeFile()
     unsigned int firstClusterLow;
     struct dir_Structure *dir;
     
-    prevCluster = _rootCluster; //root cluster
+    prevCluster = _rootCluster; //root cluster (change this for different directories)
     while(1)
     {
         firstSector = getFirstSector (prevCluster);
@@ -749,9 +754,12 @@ void closeFile()
                     transmitHex(LONG, sector);
                     transmitString("\r\n");
                     
+                    memcpy(dir->name, _filePosition.fileName, 11);
+                    /*
                     for(j=0; j<11; j++)
                         dir->name[j] = 'Q';
-                        
+                    */
+                    
                         //dir->name[j] = fileName[j];
                     dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
                     dir->NTreserved = 0;			//always set to 0

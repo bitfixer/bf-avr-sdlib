@@ -150,8 +150,20 @@ int main(void)
             //transmitString("no firmware.");
         }
         
+        progname[0] = 'M';
+        progname[1] = 'Y';
+        progname[2] = 'F';
+        progname[3] = 'I';
+        progname[4] = 'L';
+        progname[5] = 'E';
+        progname[6] = ' ';
+        progname[7] = ' ';
+        progname[8] = ' ';
+        progname[9] = 'B';
+        progname[10] = 'I';
+        progname[11] = 'N';
         
-        openFileForWriting("blah");
+        openFileForWriting(progname);
         for (k = 0; k < 512; k++)
         {
             _buffer[k] = k % 256;

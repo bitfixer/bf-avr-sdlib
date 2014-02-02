@@ -129,6 +129,7 @@ typedef struct _file_stat{
 } file_stat;
 
 typedef struct _file_position {
+    unsigned char *fileName;
     unsigned long startCluster;
     unsigned long cluster;
     unsigned long sector;
@@ -163,6 +164,8 @@ typedef struct _file_position {
 #define GET_FILE     1
 #define DELETE		 2
 #define EOF		0x0fffffff
+
+#define MAX_FILENAME 32
 
 
 //************* external variables *************
