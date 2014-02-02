@@ -57,7 +57,7 @@ void init_devices(void)
 
 int main(void)
 {
-    unsigned char fileName[11];
+    unsigned char fileName[12];
     unsigned char progname[FNAMELEN];
     unsigned char tmp[50];
     unsigned char rdchar,rdbus,tmp1,tmp2,ctl;
@@ -163,14 +163,20 @@ int main(void)
         progname[10] = 'I';
         progname[11] = 'N';
         
-        openFileForWriting(progname);
-        for (k = 0; k < 512; k++)
+        for (i = 0; i < 5; i++)
         {
-            _buffer[k] = k % 256;
+            progname[6] = 'A' + i;
+            openFileForWriting(progname);
+            
+            for (k = 0; k < 512; k++)
+            {
+                _buffer[k] = k % 256;
+            }
+            
+            transmitString("writing..\r\n");
+            writeBufferToFile();
+            closeFile();
         }
-        transmitString("writing..\r\n");
-        writeBufferToFile();
-        closeFile();
     }
     else
     {

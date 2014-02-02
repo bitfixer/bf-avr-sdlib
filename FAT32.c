@@ -663,7 +663,7 @@ void openFileForWriting(unsigned char *fileName)
     // use existing buffer for filename
     _filePosition.fileName = _longEntryString;
     memset(_filePosition.fileName, 0, 32);
-    memcpy(_filePosition.fileName, fileName, 11);
+    memcpy(_filePosition.fileName, fileName, 12);
     
     //transmitString("total clusters: ");
     transmitHex(LONG, _totalClusters);
@@ -693,6 +693,7 @@ void openFileForWriting(unsigned char *fileName)
     getSetNextCluster(cluster, SET, EOF);   //last cluster of the file, marked EOF
     
     _filePosition.startCluster = cluster;
+    _filePosition.cluster = cluster;
     _filePosition.fileSize = 0;
     _filePosition.sector = getFirstSector(_filePosition.startCluster);
     transmitString("sector: ");
@@ -726,6 +727,9 @@ void closeFile()
     unsigned int firstClusterLow;
     struct dir_Structure *dir;
     
+    // set next free cluster in FAT
+    getSetFreeCluster (NEXT_FREE, SET, _filePosition.cluster); //update FSinfo next free cluster entry
+    
     prevCluster = _rootCluster; //root cluster (change this for different directories)
     while(1)
     {
@@ -754,13 +758,8 @@ void closeFile()
                     transmitHex(LONG, sector);
                     transmitString("\r\n");
                     
-                    memcpy(dir->name, _filePosition.fileName, 11);
-                    /*
-                    for(j=0; j<11; j++)
-                        dir->name[j] = 'Q';
-                    */
+                    memcpy(dir->name, _filePosition.fileName, 12);
                     
-                        //dir->name[j] = fileName[j];
                     dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
                     dir->NTreserved = 0;			//always set to 0
                     dir->timeTenth = 0;			//always set to 0
