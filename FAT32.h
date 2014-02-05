@@ -129,6 +129,7 @@ typedef struct _file_stat{
 } file_stat;
 
 typedef struct _file_position {
+    unsigned char isLongFilename;
     unsigned char *fileName;
     unsigned long startCluster;
     unsigned long cluster;
@@ -170,9 +171,6 @@ typedef struct _file_position {
 
 #define MAX_FILENAME 32
 
-//#define getFirstCluster(dir) (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO
-//#define getFirstSector(clusterNumber) (((clusterNumber - 2) * _sectorPerCluster) + _firstDataSector)
-
 //************* external variables *************
 volatile unsigned long _firstDataSector,     _rootCluster,        _totalClusters;
 volatile unsigned int  _bytesPerSector,      _sectorPerCluster,   _reservedSectorCount;
@@ -190,15 +188,15 @@ volatile file_position _filePosition;
 unsigned char getBootSectorData (void);
 unsigned long getFirstSector(unsigned long clusterNumber);
 unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, unsigned long FSEntry);
-struct dir_Structure* findFiles (unsigned char flag, unsigned char *fileName);
-struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster);
+//struct dir_Structure* findFiles (unsigned char flag, unsigned char *fileName);
+//struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster);
+struct dir_Structure* findFile (unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster);
 unsigned long getSetNextCluster (unsigned long clusterNumber,unsigned char get_set,unsigned long clusterEntry);
 unsigned char readFile (unsigned char flag, unsigned char *fileName);
 unsigned char convertFileName (unsigned char *fileName);
 void writeFile (unsigned char *fileName);
 void appendFile (void);
 unsigned long searchNextFreeCluster (unsigned long startCluster);
-void memoryStatistics (void);
 void displayMemory (unsigned char flag, unsigned long memory);
 void deleteFile (unsigned char *fileName);
 void freeMemoryUpdate (unsigned char flag, unsigned long size);

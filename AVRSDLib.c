@@ -140,7 +140,6 @@ int main(void)
         progname[3] = 'B';
         progname[4] = '*';
         progname[5] = 0;
-        //dir = findFilesL(GET_FILE, progname, 0);
         dir = findFiles2(GET_FILE, progname, 0, _rootCluster);
         transmitString("I am back");
         
