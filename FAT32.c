@@ -438,11 +438,6 @@ void openFileForReading(unsigned char *fileName, unsigned long dirCluster)
     dir = findFiles2(0, fileName, 0, dirCluster);
     
     _filePosition.fileSize = dir->fileSize;
-    
-    transmitString("filesize :");
-    transmitHex(LONG, _filePosition.fileSize);
-    transmitString("\r\n");
-    
     _filePosition.startCluster = getFirstCluster(dir);
     
     _filePosition.cluster = _filePosition.startCluster;
@@ -455,20 +450,19 @@ void getNextFileBlock()
 {
     unsigned long sector;
     unsigned char error;
+    
+    // if cluster has no more sectors, move to next cluster
+    if (_filePosition.sectorIndex == _sectorPerCluster)
+    {
+        _filePosition.sectorIndex = 0;
+        _filePosition.cluster = getSetNextCluster(_filePosition.cluster, GET, 0);
+    }
+    
     sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
     
     error = SD_readSingleBlock(sector);
     _filePosition.byteCounter += 512;
     _filePosition.sectorIndex++;
-    
-    if (_filePosition.byteCounter < _filePosition.fileSize)
-    {
-        if (_filePosition.sectorIndex == _sectorPerCluster)
-        {
-            _filePosition.sectorIndex = 0;
-            _filePosition.cluster = getSetNextCluster(_filePosition.cluster, GET, 0);
-        }
-    }
 }
 
 // open a new file for writing
