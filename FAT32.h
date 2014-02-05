@@ -136,6 +136,7 @@ typedef struct _file_position {
     unsigned char sectorIndex;
     unsigned long sector;
     unsigned long fileSize;
+    unsigned long byteCounter;
     unsigned int byte;
 } file_position;
 
@@ -169,6 +170,8 @@ typedef struct _file_position {
 
 #define MAX_FILENAME 32
 
+//#define getFirstCluster(dir) (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO
+//#define getFirstSector(clusterNumber) (((clusterNumber - 2) * _sectorPerCluster) + _firstDataSector)
 
 //************* external variables *************
 volatile unsigned long _firstDataSector,     _rootCluster,        _totalClusters;
@@ -204,5 +207,10 @@ unsigned char ChkSum (unsigned char *pFcbName);
 void startFileRead(struct dir_Structure *dirEntry, file_stat *thisFileStat);
 void getCurrentFileBlock(file_stat *thisFileStat);
 unsigned long getNextBlockAddress(file_stat *thisFileStat);
+
+unsigned long getFirstCluster(struct dir_Structure *dir);
+void openFileForWriting(unsigned char *fileName, unsigned long dirCluster);
+void openFileForReading(unsigned char *fileName, unsigned long dirCluster);
+void getNextFileBlock();
 
 #endif

@@ -109,11 +109,35 @@ int main(void)
         transmitString("card initialized.");
         error = getBootSectorData (); //read boot sector and keep necessary data in global variables
     
+        
+        // look for firmware file
+        progname[0] = 'T';
+        progname[1] = 'E';
+        progname[2] = 'S';
+        progname[3] = 'T';
+        progname[4] = '*';
+        progname[5] = 0;
+        
+        openFileForReading(progname, _rootCluster);
+        while (_filePosition.byteCounter < _filePosition.fileSize)
+        {
+            getNextFileBlock();
+            for (k = 0; k < 512; k++)
+            {
+                transmitByte(_buffer[k]);
+            }
+        }
+        
+        transmitString("\r\n");
+        transmitString("done reading file\r\n");
+        
+        
+        /*
         // look for firmware file
         progname[0] = 'F';
         progname[1] = 'O';
         progname[2] = 'L';
-        progname[3] = 'D';
+        progname[3] = 'B';
         progname[4] = '*';
         progname[5] = 0;
         //dir = findFilesL(GET_FILE, progname, 0);
@@ -122,45 +146,21 @@ int main(void)
         
         if (dir != 0)
         {
-            // found firmware file
-            /*
-            transmitString("found directory..\r\n");
-            
-            transmitString("firstClusterHI: ");
-            transmitHex(INT, dir->firstClusterHI);
-            transmitString("\r\n");
-            
-            transmitString("firstClusterLO: ");
-            transmitHex(INT, dir->firstClusterLO);
-            transmitString("\r\n");
-            
-            
-            transmitString("fileSize: ");
-            transmitHex(LONG, dir->fileSize);
-            transmitString("\r\n");
-            */
-            
-            //unsigned long cluster = (unsigned long)dir->firstClusterLO;
-            //dir = findFiles2(GET_FILE, progname, 1, cluster);
-            
-            dirCluster = (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
+            dirCluster = getFirstCluster(dir);
             
             transmitString("dirCluster ");
             transmitHex(LONG, dirCluster);
             transmitString("\r\n");
-            
-        } 
-        else 
-        {
-            //transmitString("no firmware.");
         }
+        */
         
+        /*
         progname[0] = 'M';
         progname[1] = 'Y';
         progname[2] = 'F';
         progname[3] = 'I';
         progname[4] = 'L';
-        progname[5] = 'F';
+        progname[5] = 'G';
         progname[6] = ' ';
         progname[7] = ' ';
         progname[8] = 'B';
@@ -173,7 +173,7 @@ int main(void)
             openFileForWriting(progname, dirCluster);
             
             transmitString("writing..\r\n");
-            for (j = 0; j < 12; j++)
+            for (j = 0; j < 16; j++)
             {
                 for (k = 0; k < 512; k++)
                 {
@@ -183,6 +183,7 @@ int main(void)
             }
             closeFile();
         }
+        */
     }
     else
     {

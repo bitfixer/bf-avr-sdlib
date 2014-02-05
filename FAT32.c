@@ -89,6 +89,7 @@ unsigned char getBootSectorData (void)
 //Arguments: cluster number for which first sector is to be found
 //return: first sector address
 //***************************************************************************
+
 unsigned long getFirstSector(unsigned long clusterNumber)
 {
   return (((clusterNumber - 2) * _sectorPerCluster) + _firstDataSector);
@@ -173,6 +174,7 @@ unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, 
      return 0xffffffff;
 }
 
+/*
 void startFileRead(struct dir_Structure *dir, file_stat *thisFileStat)
 {
     thisFileStat->currentCluster = (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
@@ -209,6 +211,7 @@ unsigned long getNextBlockAddress(file_stat *thisFileStat)
     
     return nextAddress;
 }
+*/
 
 struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster)
 {
@@ -229,14 +232,10 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
     
     cmp_length = 4;
     memset(_longEntryString, 0, 32);
-    
     is_long_entry = 0;
     
     // convert filename to uppercase
     fileName = strupr(fileName);
-    transmitString(fileName);
-    transmitString("\r\n");
-    
     cluster = firstCluster;
     while (1)
     {
@@ -264,21 +263,13 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
                     
                     if (cmp_long_fname == 1)
                     {
-                        //transmitString("cmplongfname\r\n");
                         if (is_long_entry == 1)
                         {
-                            transmitString(_longEntryString);
-                            transmitString("\r\n");
-                            
                             ustr = strupr((unsigned char *)_longEntryString);
-                            transmitString(ustr);
-                            transmitString("\r\n");
-                            
                             result = strncmp(fileName, ustr, cmp_length);
                             if (result == 0)
                             {
                                 // found the file, long entry match
-                                //transmitString("lent match\r\n");
                                 return dir;
                             }
                         }
@@ -289,7 +280,6 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
                         if (result == 0)
                         {
                             // found the file, regular match
-                            //transmitString("reg match\r\n");
                             return dir;
                         }
                     }
@@ -350,225 +340,6 @@ struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, u
         }
     }
 }
-
-/*
-struct dir_Structure* findFilesL (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname)
-{
-unsigned long cluster, sector, firstSector, firstCluster, nextCluster;
-struct dir_Structure *dir;
-struct dir_Longentry_Structure *longent;
-unsigned int i;
-unsigned char j,k,index;
-unsigned char tf, this_fname_len;
-unsigned char lentstr[32];
-unsigned char ord;
-unsigned char is_long_entry;
-unsigned char is_long_entry_match;
-unsigned char done_long_entry_check;
-unsigned char fname_len;
-unsigned char wildcard;
-unsigned char temp, temp2;
-
-cluster = _rootCluster; //root cluster
-    
-is_long_entry = 0;
-for (i = 0; i < 32; i++)
-{
-    lentstr[i] = 0;
-}
-is_long_entry_match = 1;
-
-while(1)
-{
-    // get first sector on this card
-    firstSector = getFirstSector (cluster);
-
-    // loop through sectors in this cluster
-    for(sector = 0; sector < _sectorPerCluster; sector++)
-    {
-        SD_readSingleBlock (firstSector + sector);
-        for(i = 0; i < _bytesPerSector; i += 32)
-        {
-	    dir = (struct dir_Structure *) &_buffer[i];
-            transmitString(dir->name);
-            
-        if(dir->name[0] == EMPTY) //indicates end of the file list of the directory
-		{
-          // file does not exist
-		  return 0;   
-		}
-		if((dir->name[0] != DELETED) && (dir->attrib != ATTR_LONG_NAME))
-        {
-            if((flag == GET_FILE) || (flag == DELETE))
-            {
-                j = 0;
-
-                if (cmp_long_fname == 1)
-                {
-                    // check long file name entry for exact match
-                    j = 0;
-                    
-                    this_fname_len = index;
-                    if (is_long_entry == 1)
-                    {
-                        // do long entry check
-                        j = 11;
-                        for (tf = 0; tf < fname_len; tf++)
-                        {
-                            temp = lentstr[tf];
-                            temp2 = fileName[tf];
-                            
-                            // set characters to uppercase
-                            if (temp >= 'a' && temp <= 'z')
-                            {
-                                temp -= 32;
-                            }
-                            
-                            if (temp2 >= 'a' && temp2 <= 'z')
-                            {
-                                temp2 -= 32;
-                            }
-                            
-                            //if (lentstr[tf] != fileName[tf])
-                            if (temp != temp2)
-                            {
-                                // check for wildcard
-                                if (fileName[tf] == '*')
-                                {
-                                    // what's after doesn't matter, this is a match
-                                    j = 11;
-                                    break;
-                                }
-                            
-                                // this is not a match
-                                j = 0;
-                                break;
-                            }
-                        }
-                    }
-                }
-                else 
-                {
-                    for(j=0; j<11; j++)
-                    {
-                        if(dir->name[j] != fileName[j]) 
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                if(j == 11)
-        		{
-                // found the right file, proceed.
-
-                if(flag == GET_FILE)
-                {
-                    _appendFileSector = firstSector + sector;
-                    _appendFileLocation = i;
-                    _appendStartCluster = (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
-                    _fileSize = dir->fileSize;
-                    return (dir);
-                }
-                else    //when flag = DELETE
-                {
-                    firstCluster = (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
-
-                    //mark file as 'deleted' in FAT table
-                    dir->name[0] = DELETED;    
-                    SD_writeSingleBlock (firstSector+sector);
-
-                    freeMemoryUpdate (ADD, dir->fileSize);
-
-                    //update next free cluster entry in FSinfo sector
-                    cluster = getSetFreeCluster (NEXT_FREE, GET, 0); 
-                    if(firstCluster < cluster)
-                        getSetFreeCluster (NEXT_FREE, SET, firstCluster);
-
-                    //mark all the clusters allocated to the file as 'free'
-                    while(1)  
-                    {
-                        nextCluster = getSetNextCluster (firstCluster, GET, 0);
-                        getSetNextCluster (firstCluster, SET, 0);
-                        if(nextCluster > 0x0ffffff6) 
-                        {
-                            return 0;
-                        }
-                        firstCluster = nextCluster;
-                    } 
-                }
-            }
-          }
-          
-          // clear out the long entry string
-          if (is_long_entry == 1)
-          {
-            for (k = 0; k < 32; k++)
-            {
-                lentstr[k] = 0;
-            }
-            
-          }
-          is_long_entry = 0;
-          is_long_entry_match = 1;
-       }
-       // handle long file name entries
-       else if (dir->attrib == ATTR_LONG_NAME)
-       {
-            is_long_entry = 1;
-            if (is_long_entry_match == 1)
-            {
-                done_long_entry_check = 0;
-                
-                longent = (struct dir_Longentry_Structure *) &_buffer[i];
-                
-                ord = (longent->LDIR_Ord & 0x0F) - 1;
-                index = (13*ord);
-                
-                for (k = 0; k < 5; k++)
-                {
-                    lentstr[index] = (unsigned char)longent->LDIR_Name1[k];
-                    index++;
-                }
-                 
-                if (is_long_entry_match == 1 && done_long_entry_check == 0)
-                {
-                    for (k = 0; k < 6; k++)
-                    {
-                        lentstr[index] = (unsigned char)longent->LDIR_Name2[k];
-                        index++;
-                    }
-                }
-                   
-                if (is_long_entry_match == 1 && done_long_entry_check == 0)
-                {
-                    for (k = 0; k < 2; k++)
-                    {
-                        lentstr[index] = (unsigned char)longent->LDIR_Name3[k];
-                        index++;
-                    }
-                }
-                
-            }
-       }
-     }
-   }
-
-   cluster = (getSetNextCluster (cluster, GET, 0));
-
-   if(cluster > 0x0ffffff6)
-   	 return 0;
-   if(cluster == 0) 
-   {transmitString_F(PSTR("Error in getting cluster"));  return 0;}
- }
-return 0;
-}
-
-struct dir_Structure* findFiles (unsigned char flag, unsigned char *fileName)
-{
-    return findFilesL(flag,fileName,0);
-}
-*/
  
 //***************************************************************************
 //Function: if flag=READ then to read file from SD card and send contents to UART 
@@ -655,6 +426,51 @@ fileName[11] = 0x00;
 return 0;
 }
 
+unsigned long getFirstCluster(struct dir_Structure *dir)
+{
+    return (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
+}
+
+void openFileForReading(unsigned char *fileName, unsigned long dirCluster)
+{
+    struct dir_Structure *dir;
+    
+    dir = findFiles2(0, fileName, 0, dirCluster);
+    
+    _filePosition.fileSize = dir->fileSize;
+    
+    transmitString("filesize :");
+    transmitHex(LONG, _filePosition.fileSize);
+    transmitString("\r\n");
+    
+    _filePosition.startCluster = getFirstCluster(dir);
+    
+    _filePosition.cluster = _filePosition.startCluster;
+    _filePosition.byteCounter = 0;
+    _filePosition.sectorIndex = 0;
+    _filePosition.dirStartCluster = dirCluster;
+}
+
+void getNextFileBlock()
+{
+    unsigned long sector;
+    unsigned char error;
+    sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
+    
+    error = SD_readSingleBlock(sector);
+    _filePosition.byteCounter += 512;
+    _filePosition.sectorIndex++;
+    
+    if (_filePosition.byteCounter < _filePosition.fileSize)
+    {
+        if (_filePosition.sectorIndex == _sectorPerCluster)
+        {
+            _filePosition.sectorIndex = 0;
+            _filePosition.cluster = getSetNextCluster(_filePosition.cluster, GET, 0);
+        }
+    }
+}
+
 // open a new file for writing
 void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
 {
@@ -665,43 +481,23 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
     memset(_filePosition.fileName, 0, 32);
     memcpy(_filePosition.fileName, fileName, 11);
     
-    //transmitString("total clusters: ");
-    //transmitHex(LONG, _totalClusters);
-    //transmitString("\r\n");
-    
     // find the start cluster for this file
     cluster = getSetFreeCluster(NEXT_FREE, GET, 0);
-    //transmitString("cluster nextfree: ");
-    //transmitHex(LONG, cluster);
-    //transmitString("\r\n");
-    
     if (cluster > _totalClusters)
     {
         cluster = _rootCluster;
     }
     
-    transmitString("cluster nextfree2: ");
-    transmitHex(LONG, cluster);
-    transmitString("\r\n");
-    
     // set the start cluster with EOF
     cluster = searchNextFreeCluster(cluster);
-    transmitString("cluster searchnext: ");
-    transmitHex(LONG, cluster);
-    transmitString("\r\n");
     
     getSetNextCluster(cluster, SET, EOF);   //last cluster of the file, marked EOF
     
     _filePosition.startCluster = cluster;
     _filePosition.cluster = cluster;
     _filePosition.fileSize = 0;
-    //_filePosition.sector = getFirstSector(_filePosition.startCluster);
     _filePosition.sectorIndex = 0;
     _filePosition.dirStartCluster = dirCluster;
-    //transmitString("sector: ");
-    //transmitHex(LONG, _filePosition.sector);
-    //transmitString("\r\n");
-    //transmitString("done\r\n");
 }
 
 void writeBufferToFile(unsigned int bytesToWrite)
