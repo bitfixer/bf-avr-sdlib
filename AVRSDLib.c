@@ -57,7 +57,7 @@ void init_devices(void)
 
 int main(void)
 {
-    unsigned char fileName[12];
+    unsigned char fileName[20];
     unsigned char progname[FNAMELEN];
     unsigned char tmp[50];
     unsigned char rdchar,rdbus,tmp1,tmp2,ctl;
@@ -109,7 +109,7 @@ int main(void)
         transmitString("card initialized.");
         error = getBootSectorData (); //read boot sector and keep necessary data in global variables
     
-        
+        /*
         // look for firmware file
         progname[0] = 'T';
         progname[1] = 'E';
@@ -130,17 +130,17 @@ int main(void)
         
         transmitString("\r\n");
         transmitString("done reading file\r\n");
+        */
         
         
-        /*
         // look for firmware file
         progname[0] = 'F';
         progname[1] = 'O';
         progname[2] = 'L';
-        progname[3] = 'B';
+        progname[3] = 'D';
         progname[4] = '*';
         progname[5] = 0;
-        dir = findFiles2(GET_FILE, progname, 0, _rootCluster);
+        dir = findFile(progname, _rootCluster);
         transmitString("I am back");
         
         if (dir != 0)
@@ -151,24 +151,27 @@ int main(void)
             transmitHex(LONG, dirCluster);
             transmitString("\r\n");
         }
-        */
         
-        /*
-        progname[0] = 'M';
-        progname[1] = 'Y';
-        progname[2] = 'F';
-        progname[3] = 'I';
-        progname[4] = 'L';
-        progname[5] = 'G';
-        progname[6] = ' ';
-        progname[7] = ' ';
-        progname[8] = 'B';
-        progname[9] = 'I';
-        progname[10] = 'N';
         
-        for (i = 0; i < 5; i++)
+        progname[0] = 'H';
+        progname[1] = 'a';
+        progname[2] = 'p';
+        progname[3] = 'p';
+        progname[4] = 'y';
+        progname[5] = ' ';
+        progname[6] = 'F';
+        progname[7] = 'i';
+        progname[8] = 'l';
+        progname[9] = 'e';
+        progname[10] = 'm';
+        progname[11] = 'a';
+        progname[12] = 'n';
+        progname[13] = '!';
+        progname[14] = 0;
+        
+        //for (i = 0; i < 5; i++)
         {
-            progname[6] = 'A' + i;
+            //progname[6] = 'A' + i;
             openFileForWriting(progname, dirCluster);
             
             transmitString("writing..\r\n");
@@ -182,7 +185,7 @@ int main(void)
             }
             closeFile();
         }
-        */
+        
     }
     else
     {

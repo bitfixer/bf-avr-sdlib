@@ -139,6 +139,7 @@ typedef struct _file_position {
     unsigned long fileSize;
     unsigned long byteCounter;
     unsigned int byte;
+    unsigned char shortFilename[11];
 } file_position;
 
 //Attribute definitions for file/directory
@@ -180,7 +181,7 @@ volatile unsigned long _unusedSectors, _appendFileSector, _appendFileLocation, _
 unsigned char _freeClusterCountUpdated;
 volatile unsigned long _fileStartCluster;
 
-volatile unsigned char _longEntryString[32];
+volatile unsigned char _longEntryString[MAX_FILENAME];
 volatile file_position _filePosition;
 
 
@@ -190,7 +191,7 @@ unsigned long getFirstSector(unsigned long clusterNumber);
 unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, unsigned long FSEntry);
 //struct dir_Structure* findFiles (unsigned char flag, unsigned char *fileName);
 //struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster);
-struct dir_Structure* findFile (unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster);
+struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstCluster);
 unsigned long getSetNextCluster (unsigned long clusterNumber,unsigned char get_set,unsigned long clusterEntry);
 unsigned char readFile (unsigned char flag, unsigned char *fileName);
 unsigned char convertFileName (unsigned char *fileName);

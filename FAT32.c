@@ -30,6 +30,32 @@
 #include "UART_routines.h"
 #include "SD_routines.h"
 
+/*
+void mymemset(unsigned char *ptr, unsigned char val, int num)
+{
+    int i;
+    for (i = 0; i < num; i++)
+    {
+        ptr[i] = val;
+    }
+}
+*/
+
+/*
+int mystrncmp(unsigned char *a, unsigned char *b, int count)
+{
+    int i;
+    for (i = 0; i < count; i++)
+    {
+        if (a[i] != b[i])
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+*/
+
 //***************************************************************************
 //Function: to read data from boot sector of SD card, to determine important
 //parameters like _bytesPerSector, sectorsPerCluster etc.
@@ -174,7 +200,28 @@ unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, 
      return 0xffffffff;
 }
 
-struct dir_Structure* findFile (unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster)
+unsigned char isLongFilename(unsigned char *fileName)
+{
+    if (strlen(fileName) > 11)
+    {
+        return 1;
+    }
+    
+    // there are fewer than 11 characters
+    // look for . character
+}
+
+unsigned char numCharsToCompare(unsigned char *fileName)
+{
+    unsigned char numChars = 0;
+    while(fileName[numChars] != 0 && fileName[numChars] != '*')
+    {
+        numChars++;
+    }
+    return numChars;
+}
+
+struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstCluster)
 {
     unsigned long firstSector;
     unsigned long cluster;
@@ -188,11 +235,13 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned char cmp_long_
     unsigned char k;
     unsigned char ord;
     unsigned char cmp_length;
+    unsigned char cmp_long_fname;
     int result;
     int b;
     
-    cmp_length = 4;
-    memset(_longEntryString, 0, 32);
+    cmp_long_fname = isLongFilename(fileName);
+    cmp_length = numCharsToCompare(fileName);
+    memset(_longEntryString, 0, MAX_FILENAME);
     is_long_entry = 0;
     
     // convert filename to uppercase
@@ -248,7 +297,7 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned char cmp_long_
                     // clear out the long entry string
                     if (is_long_entry == 1)
                     {
-                        memset(_longEntryString, 0, 32);
+                        memset(_longEntryString, 0, MAX_FILENAME);
                     }
                     is_long_entry = 0;
                 }
@@ -334,6 +383,7 @@ if(flag == VERIFY) return (1);	//specified file name is already existing
 //Arguments: pointer to the file name
 //return: 0, if successful else 1.
 //***************************************************************************
+/*
 unsigned char convertFileName (unsigned char *fileName)
 {
 unsigned char fileNameFAT[11];
@@ -385,6 +435,7 @@ fileName[11] = 0x00;
 
 return 0;
 }
+*/
 
 unsigned long getFirstCluster(struct dir_Structure *dir)
 {
@@ -395,7 +446,7 @@ void openFileForReading(unsigned char *fileName, unsigned long dirCluster)
 {
     struct dir_Structure *dir;
     
-    dir = findFile(fileName, 0, dirCluster);
+    dir = findFile(fileName, dirCluster);
     
     _filePosition.fileSize = dir->fileSize;
     _filePosition.startCluster = getFirstCluster(dir);
@@ -432,8 +483,9 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
     
     // use existing buffer for filename
     _filePosition.fileName = _longEntryString;
-    memset(_filePosition.fileName, 0, 32);
-    memcpy(_filePosition.fileName, fileName, 11);
+    memset(_filePosition.fileName, 0, MAX_FILENAME);
+    strcpy(_filePosition.fileName, fileName);
+    //memcpy(_filePosition.fileName, fileName, 11);
     
     // find the start cluster for this file
     cluster = getSetFreeCluster(NEXT_FREE, GET, 0);
@@ -461,16 +513,20 @@ void writeBufferToFile(unsigned int bytesToWrite)
     unsigned long sector;
     // write a block to current file
     
+    /*
     transmitString("dircluster: ");
     transmitHex(LONG, _filePosition.dirStartCluster);
     transmitString("\r\n");
-
+    */
+     
     sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
     
+    /*
     transmitString("sector: ");
     transmitHex(LONG, sector);
     transmitString("\r\n");
-    
+    */
+     
     error = SD_writeSingleBlock(sector);
     _filePosition.fileSize += bytesToWrite;
     _filePosition.sectorIndex++;
@@ -496,16 +552,53 @@ void closeFile()
     unsigned int firstClusterHigh, i;
     unsigned int firstClusterLow;
     struct dir_Structure *dir;
+    unsigned char checkSum;
+    unsigned char islongfilename;
+    
+    struct dir_Longentry_Structure *longent;
+    
+    unsigned char fname_len;
+    unsigned char fname_remainder;
+    unsigned char num_long_entries;
+    unsigned char curr_fname_pos;
+    unsigned char curr_long_entry;
+    unsigned long fileNameLong[39];
+    
+    islongfilename = isLongFilename(_filePosition.fileName);
+    if (islongfilename == 1)
+    {
+        makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
+        checkSum = ChkSum(_filePosition.shortFilename);
+        
+        fname_len = strlen(_filePosition.fileName);
+        fname_remainder = fname_len % 13;
+        num_long_entries = ((fname_len - fname_remainder) / 13) + 1;
+        
+        curr_fname_pos = 0;
+        for (j = 0; j < fname_len+1; j++)
+        {
+            fileNameLong[j] = _filePosition.fileName[j];
+        }
+        for (j = fname_len+1; j < 39; j++)
+        {
+            fileNameLong[j] = 0xffff;
+        }
+        
+        curr_long_entry = num_long_entries;
+    }
     
     // set next free cluster in FAT
     getSetFreeCluster (NEXT_FREE, SET, _filePosition.cluster); //update FSinfo next free cluster entry
     
     //prevCluster = _rootCluster;
     prevCluster = _filePosition.dirStartCluster;
+    
+    /*
     transmitString("prevcluster: ");
     transmitHex(LONG, prevCluster);
     transmitString("\r\n");
-    
+    */
+     
     while(1)
     {
         firstSector = getFirstSector (prevCluster);
@@ -514,53 +607,120 @@ void closeFile()
         {
             
             SD_readSingleBlock (firstSector + sector);
+            
+            /*
             transmitString("currsector: ");
             transmitHex(LONG, firstSector+sector);
             transmitString("\r\n");
-            
+            */
+             
             for( i = 0; i < _bytesPerSector; i += 32)
             {
                 dir = (struct dir_Structure *) &_buffer[i];
                 
                 if(fileCreatedFlag)   //to mark last directory entry with 0x00 (empty) mark
                 { 					  //indicating end of the directory file list
-                    dir->name[0] = 0x00;
+                    dir->name[0] = EMPTY;
+                    SD_writeSingleBlock(firstSector + sector);
                     return;
                 }
                 
-                if((dir->name[0] == EMPTY) || (dir->name[0] == DELETED))  //looking for an empty slot to enter file info
+                if (islongfilename == 0)
                 {
-                    transmitString("dir byte: ");
-                    transmitHex(INT, i);
-                    transmitString("\r\n");
-                    
-                    memcpy(dir->name, _filePosition.fileName, 11);
-                    
-                    dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
-                    dir->NTreserved = 0;			//always set to 0
-                    dir->timeTenth = 0;			//always set to 0
-                    dir->createTime = 0x9684;		//fixed time of creation
-                    dir->createDate = 0x3a37;		//fixed date of creation
-                    dir->lastAccessDate = 0x3a37;	//fixed date of last access
-                    dir->writeTime = 0x9684;		//fixed time of last write
-                    dir->writeDate = 0x3a37;		//fixed date of last write
-                    
-                    firstClusterHigh = (unsigned int) ((_filePosition.startCluster & 0xffff0000) >> 16 );
-                    firstClusterLow = (unsigned int) ( _filePosition.startCluster & 0x0000ffff);
-                    
-                    dir->firstClusterHI = firstClusterHigh;
-                    dir->firstClusterLO = firstClusterLow;
-                    dir->fileSize = _filePosition.fileSize;
-                    
-                    SD_writeSingleBlock (firstSector + sector);
-                    fileCreatedFlag = 1;
-                    
-                    TX_NEWLINE;
-                    TX_NEWLINE;
-                    transmitString_F(PSTR(" File Created!"));
-                    
-                    freeMemoryUpdate (REMOVE, _filePosition.fileSize); //updating free memory count in FSinfo sector
-                    
+                    //if((dir->name[0] == EMPTY) || (dir->name[0] == DELETED))  //looking for an empty slot to enter file info
+                    if (dir->name[0] == EMPTY)
+                    {
+                        /*
+                        transmitString("dir byte: ");
+                        transmitHex(INT, i);
+                        transmitString("\r\n");
+                        */
+                         
+                        memcpy(dir->name, _filePosition.shortFilename, 11);
+                        
+                        dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
+                        dir->NTreserved = 0;			//always set to 0
+                        dir->timeTenth = 0;			//always set to 0
+                        dir->createTime = 0x9684;		//fixed time of creation
+                        dir->createDate = 0x3a37;		//fixed date of creation
+                        dir->lastAccessDate = 0x3a37;	//fixed date of last access
+                        dir->writeTime = 0x9684;		//fixed time of last write
+                        dir->writeDate = 0x3a37;		//fixed date of last write
+                        
+                        firstClusterHigh = (unsigned int) ((_filePosition.startCluster & 0xffff0000) >> 16 );
+                        firstClusterLow = (unsigned int) ( _filePosition.startCluster & 0x0000ffff);
+                        
+                        dir->firstClusterHI = firstClusterHigh;
+                        dir->firstClusterLO = firstClusterLow;
+                        dir->fileSize = _filePosition.fileSize;
+                        
+                        SD_writeSingleBlock (firstSector + sector);
+                        fileCreatedFlag = 1;
+                        
+                        //TX_NEWLINE;
+                        //TX_NEWLINE;
+                        transmitString_F(PSTR(" File Created!"));
+                        
+                        freeMemoryUpdate (REMOVE, _filePosition.fileSize); //updating free memory count in FSinfo sector
+                        
+                    }
+                }
+                else
+                {
+                    if (dir->name[0] == EMPTY)
+                    {
+                        // create long directory entry
+                        
+                        longent = (struct dir_Longentry_Structure *) &_buffer[i];
+                        
+                        // fill in the long entry fields
+                        if (curr_long_entry == num_long_entries)
+                        {
+                            longent->LDIR_Ord = 0x40 | curr_long_entry;
+                        }
+                        else
+                        {
+                            longent->LDIR_Ord = curr_long_entry;
+                        }
+                        
+                        curr_long_entry--;
+                        curr_fname_pos = curr_long_entry * 13;
+                        
+                        longent->LDIR_Name1[0] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name1[1] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name1[2] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name1[3] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name1[4] = fileNameLong[curr_fname_pos++];
+                        
+                        longent->LDIR_Name2[0] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name2[1] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name2[2] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name2[3] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name2[4] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name2[5] = fileNameLong[curr_fname_pos++];
+                        
+                        longent->LDIR_Name3[0] = fileNameLong[curr_fname_pos++];
+                        longent->LDIR_Name3[1] = fileNameLong[curr_fname_pos++];
+                        
+                        longent->LDIR_Attr = ATTR_LONG_NAME;
+                        longent->LDIR_Type = 0;
+                        longent->LDIR_Chksum = checkSum;
+                        longent->LDIR_FstClusLO = 0;
+                        
+                        SD_writeSingleBlock (firstSector + sector);
+                        
+                        if (curr_long_entry == 0)
+                        {
+                            // copy the short filename
+                            /*
+                            for (j = 0; j < 11; j++)
+                            {
+                                fileName[j] = shortfilename[j];
+                            }
+                            */
+                            islongfilename = 0;
+                        }
+                    }
                 }
             }
         }
@@ -1019,19 +1179,18 @@ void freeMemoryUpdate (unsigned char flag, unsigned long size)
   }
 }
 
-void makeshortfilename(unsigned char *longfilename, unsigned char *shortfilename)
+void makeShortFilename(unsigned char *longFilename, unsigned char *shortFilename)
 {
     // make a short file name from the given long file name
-    int i,j;
+    int i;
     unsigned char thechar;
-    j = 0;
     for (i = 0; i < 6; i++)
     {
-        thechar = longfilename[i];
+        thechar = longFilename[i];
         
-        if (longfilename[i] >= 'a' && longfilename[i] <= 'z')
+        if (longFilename[i] >= 'a' && longFilename[i] <= 'z')
         {
-            thechar = longfilename[i] - 32;
+            thechar = longFilename[i] - 32;
         }
         
         if (thechar < 'A' || thechar > 'Z')
@@ -1039,14 +1198,14 @@ void makeshortfilename(unsigned char *longfilename, unsigned char *shortfilename
             thechar = '_';
         }
         
-        shortfilename[i] = thechar;
+        shortFilename[i] = thechar;
     }
-        
-    shortfilename[6] = '~';
-    shortfilename[7] = '1';
-    shortfilename[8] = 'P';
-    shortfilename[9] = 'R';
-    shortfilename[10] = 'G';
+     
+    shortFilename[6] = '~';
+    shortFilename[7] = '1';
+    shortFilename[8] = 'P';
+    shortFilename[9] = 'R';
+    shortFilename[10] = 'G';
 }
 
 
