@@ -209,7 +209,7 @@ unsigned long getNextBlockAddress(file_stat *thisFileStat);
 
 unsigned long getFirstCluster(struct dir_Structure *dir);
 void openFileForWriting(unsigned char *fileName, unsigned long dirCluster);
-void openFileForReading(unsigned char *fileName, unsigned long dirCluster);
-void getNextFileBlock();
+unsigned char openFileForReading(unsigned char *fileName, unsigned long dirCluster);
+unsigned int getNextFileBlock();
 
 #endif

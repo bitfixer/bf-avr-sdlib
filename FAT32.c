@@ -442,11 +442,15 @@ unsigned long getFirstCluster(struct dir_Structure *dir)
     return (((unsigned long) dir->firstClusterHI) << 16) | dir->firstClusterLO;
 }
 
-void openFileForReading(unsigned char *fileName, unsigned long dirCluster)
+unsigned char openFileForReading(unsigned char *fileName, unsigned long dirCluster)
 {
     struct dir_Structure *dir;
     
     dir = findFile(fileName, dirCluster);
+    if (dir == 0)
+    {
+        return 0;
+    }
     
     _filePosition.fileSize = dir->fileSize;
     _filePosition.startCluster = getFirstCluster(dir);
@@ -455,9 +459,11 @@ void openFileForReading(unsigned char *fileName, unsigned long dirCluster)
     _filePosition.byteCounter = 0;
     _filePosition.sectorIndex = 0;
     _filePosition.dirStartCluster = dirCluster;
+    
+    return 1;
 }
 
-void getNextFileBlock()
+unsigned int getNextFileBlock()
 {
     unsigned long sector;
     unsigned char error;
@@ -474,6 +480,16 @@ void getNextFileBlock()
     error = SD_readSingleBlock(sector);
     _filePosition.byteCounter += 512;
     _filePosition.sectorIndex++;
+    
+    if (_filePosition.byteCounter > _filePosition.fileSize)
+    {
+        return _filePosition.fileSize - (_filePosition.byteCounter - 512);
+    }
+    else
+    {
+        return 512;
+    }
+    
 }
 
 // open a new file for writing
