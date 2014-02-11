@@ -207,6 +207,7 @@ unsigned char isLongFilename(unsigned char *fileName)
         return 1;
     }
     
+    return 0;
     // there are fewer than 11 characters
     // look for . character
 }
@@ -219,6 +220,236 @@ unsigned char numCharsToCompare(unsigned char *fileName)
         numChars++;
     }
     return numChars;
+}
+
+struct dir_Structure* ListFilesIEEE ()
+{
+    unsigned long cluster, sector, firstSector, firstCluster, nextCluster;
+    struct dir_Structure *dir;
+    struct dir_Longentry_Structure *longent;
+    unsigned int i;
+    unsigned int file, f;
+    unsigned char j,k;
+    unsigned char lentstr[32];
+    unsigned char entry[32];
+    unsigned char ord;
+    unsigned char is_long_entry;
+    unsigned int dir_start;
+    unsigned char startline;
+    unsigned char thisch;
+    int fname_length;
+    cluster = _rootCluster; //root cluster
+    is_long_entry = 0;
+    dir_start = 0x041f;
+    file = 0;
+    while(1)
+    {
+        firstSector = getFirstSector (cluster);
+        
+        for(sector = 0; sector < _sectorPerCluster; sector++)
+        {
+            SD_readSingleBlock (firstSector + sector);
+            
+            for(i=0; i<_bytesPerSector; i+=32)
+            {
+                dir = (struct dir_Structure *) &_buffer[i];
+                
+                if(dir->name[0] == EMPTY) //indicates end of the file list of the directory
+                {
+                    // write ending bytes
+                    startline = 0;
+                    dir_start += 0x001e;
+                    
+                    entry[startline] = (unsigned char)(dir_start & 0x00ff);
+                    entry[startline+1] = (unsigned char)((dir_start & 0xff00) >> 8);
+                    entry[startline+2] = 0xff;
+                    entry[startline+3] = 0xff;
+                    sprintf(&entry[startline+4], "BLOCKS FREE.             ");
+                    entry[startline+29] = 0x00;
+                    entry[startline+30] = 0x00;
+                    entry[startline+31] = 0x00;
+                    
+                    for (f = 0; f < 32; f++)
+                    {
+                        if (f == 31)
+                        {
+                            send_byte(entry[f], 1);
+                        }
+                        else
+                        {
+                            send_byte(entry[f], 0);
+                        }
+                    }
+                    return 0;
+                }
+                if((dir->name[0] != DELETED) && (dir->attrib != ATTR_LONG_NAME))
+                {
+                    if((dir->attrib != 0x10) && (dir->attrib != 0x08))
+                    {
+                        dir_start += 0x0020;
+                        
+                        startline = 0;
+                        fname_length = 0;
+                        
+                        entry[startline] = (unsigned char)(dir_start & 0x00ff);
+                        entry[startline+1] = (unsigned char)((dir_start & 0xff00) >> 8);
+                        entry[startline+2] = file+1;
+                        entry[startline+3] = 0x00;
+                        entry[startline+4] = 0x20;
+                        entry[startline+5] = 0x20;
+                        entry[startline+6] = 0x22;
+                        
+                        
+                        if (is_long_entry == 1)
+                        {
+                            while(lentstr[fname_length] != '.' && lentstr[fname_length] != 0 && fname_length < 17)
+                            {
+                                thisch = lentstr[fname_length];
+                                if (thisch >= 'a' && thisch <= 'z')
+                                {
+                                    thisch -= 32;
+                                }
+                                entry[startline+7+fname_length] = thisch;
+                                fname_length++;
+                            }
+                        }
+                        else
+                        {
+                            fname_length = 0;
+                            for (f = 0; f < 8; f++)
+                            {
+                                if (dir->name[f] == ' ')
+                                    break;
+                                
+                                entry[startline+7+f] = dir->name[f];
+                                fname_length++;
+                            }
+                        }
+                        
+                        entry[startline+7+fname_length] = 0x22;
+                        for (f = 0; f < (17 - fname_length); f++)
+                        {
+                            entry[startline+7+fname_length+f+1] = ' ';
+                        }
+                        
+                        //entry[startline+25] = 'P';
+                        //entry[startline+26] = 'R';
+                        //entry[startline+27] = 'G';
+                        entry[startline+25] = dir->name[8];
+                        entry[startline+26] = dir->name[9];
+                        entry[startline+27] = dir->name[10];
+                        
+                        entry[startline+28] = ' ';
+                        entry[startline+29] = ' ';
+                        entry[startline+30] = ' ';
+                        entry[startline+31] = 0x00;
+                        file++;
+                        
+                        for (f = 0; f < 32; f++)
+                        {
+                            send_byte(entry[f], 0);
+                        }
+                    }
+                    
+                    // clear out the long entry string
+                    if (is_long_entry == 1)
+                    {
+                        for (k = 0; k < 32; k++)
+                        {
+                            lentstr[k] = 0;
+                        }
+                        
+                    }
+                    is_long_entry = 0;
+                }
+                else if (dir->attrib == ATTR_LONG_NAME)
+                {
+                    is_long_entry = 1;
+                    longent = (struct dir_Longentry_Structure *) &_buffer[i];
+                    
+                    ord = (longent->LDIR_Ord & 0x0F) - 1;
+                    
+                    for (k = 0; k < 5; k++)
+                        lentstr[k+(13*ord)] = (unsigned char)longent->LDIR_Name1[k];
+                    
+                    for (k = 0; k < 6; k++)
+                        lentstr[k+5+(13*ord)] = (unsigned char)longent->LDIR_Name2[k];
+                    
+                    for (k = 0; k < 2; k++)
+                        lentstr[k+11+(13*ord)] = (unsigned char)longent->LDIR_Name3[k];
+                }
+            }
+        }
+        
+        cluster = (getSetNextCluster (cluster, GET, 0));
+        
+        if(cluster > 0x0ffffff6)
+            return 0;
+        if(cluster == 0) 
+        {
+            //transmitString_F(PSTR("Error in getting cluster"));
+            return 0;
+        }
+    }
+    
+    return 0;
+}
+
+void openDirectory(unsigned long firstCluster)
+{
+    // store cluster
+    _filePosition.startCluster = firstCluster;
+    _filePosition.cluster = firstCluster;
+    _filePosition.sectorIndex = 0;
+    _filePosition.byteCounter = 0;
+}
+
+struct dir_Structure *getNextDirectoryEntry()
+{
+    unsigned long firstSector;
+    struct dir_Structure *dir;
+    while(1)
+    {
+        firstSector = getFirstSector(_filePosition.cluster);
+        
+        for (; _filePosition.sectorIndex < _sectorPerCluster; _filePosition.sectorIndex++)
+        {
+            SD_readSingleBlock(firstSector + _filePosition.sectorIndex);
+            for (; _filePosition.byteCounter < _bytesPerSector; _filePosition.byteCounter += 32)
+            {
+                // get current directory entry
+                dir = (struct dir_Structure *) &_buffer[_filePosition.byteCounter];
+                
+                if (dir->name[0] == EMPTY)
+                {
+                    return 0;
+                }
+                
+                // this is a valid file entry
+                if((dir->name[0] != DELETED) && (dir->attrib != ATTR_LONG_NAME))
+                {
+                    _filePosition.byteCounter += 32;
+                    return dir;
+                }
+            }
+            // done with this sector
+            _filePosition.byteCounter = 0;
+        }
+        // done with this cluster
+        _filePosition.sectorIndex = 0;
+        _filePosition.cluster = getSetNextCluster(_filePosition.cluster, GET, 0);
+        
+        // last cluster on the card
+        if (_filePosition.cluster > 0x0ffffff6)
+        {
+            return 0;
+        }
+        if (_filePosition.cluster == 0)
+        {
+            transmitString_F(PSTR("Error in getting cluster"));
+            return 0;
+        }
+    }
 }
 
 struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstCluster)
@@ -263,7 +494,7 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
                 if(dir->name[0] == EMPTY) //indicates end of the file list of the directory
                 {
                     // file does not exist
-                    return dir;
+                    return 0;
                 }
                 
                 if((dir->name[0] != DELETED) && (dir->attrib != ATTR_LONG_NAME))
