@@ -227,6 +227,7 @@ struct dir_Structure* ListFilesIEEE(unsigned long firstCluster)
     struct dir_Structure *dir;
     unsigned char startline;
     unsigned char entry[32];
+    unsigned char thisch;
     unsigned int dir_start;
     unsigned int f;
     unsigned int file;
@@ -287,14 +288,32 @@ struct dir_Structure* ListFilesIEEE(unsigned long firstCluster)
                 entry[startline+5] = 0x20;
                 entry[startline+6] = 0x22;
                 
-                fname_length = 0;
-                for (f = 0; f < 8; f++)
+                if (_filePosition.isLongFilename)
                 {
-                    if (dir->name[f] == ' ')
-                        break;
-                    
-                    entry[startline+7+f] = dir->name[f];
-                    fname_length++;
+                    while(_filePosition.fileName[fname_length] != '.' &&
+                          _filePosition.fileName[fname_length] != 0 &&
+                          fname_length < 17)
+                    {
+                        thisch = _filePosition.fileName[fname_length];
+                        if (thisch >= 'a' && thisch <= 'z')
+                        {
+                            thisch -= 32;
+                        }
+                        entry[startline+7+fname_length] = thisch;
+                        fname_length++;
+                    }
+                }
+                else
+                {
+                    fname_length = 0;
+                    for (f = 0; f < 8; f++)
+                    {
+                        if (dir->name[f] == ' ')
+                            break;
+                        
+                        entry[startline+7+f] = dir->name[f];
+                        fname_length++;
+                    }
                 }
                 
                 entry[startline+7+fname_length] = 0x22;
@@ -511,6 +530,16 @@ struct dir_Structure *getNextDirectoryEntry()
 {
     unsigned long firstSector;
     struct dir_Structure *dir;
+    struct dir_Longentry_Structure *longent;
+    unsigned char ord;
+    unsigned char this_long_filename_length;
+    unsigned char k;
+    
+    // reset long entry info
+    memset(_longEntryString, 0, MAX_FILENAME);
+    _filePosition.isLongFilename = 0;
+    _filePosition.fileName = _longEntryString;
+    
     while(1)
     {
         firstSector = getFirstSector(_filePosition.cluster);
@@ -534,6 +563,33 @@ struct dir_Structure *getNextDirectoryEntry()
                     _filePosition.byteCounter += 32;
                     return dir;
                 }
+                else if (dir->attrib == ATTR_LONG_NAME)
+                {
+                    _filePosition.isLongFilename = 1;
+                    
+                    longent = (struct dir_Longentry_Structure *) &_buffer[_filePosition.byteCounter];
+                    
+                    ord = (longent->LDIR_Ord & 0x0F) - 1;
+                    this_long_filename_length = (13*ord);
+                    
+                    for (k = 0; k < 5; k++)
+                    {
+                        _longEntryString[this_long_filename_length] = (unsigned char)longent->LDIR_Name1[k];
+                        this_long_filename_length++;
+                    }
+                    
+                    for (k = 0; k < 6; k++)
+                    {
+                        _longEntryString[this_long_filename_length] = (unsigned char)longent->LDIR_Name2[k];
+                        this_long_filename_length++;
+                    }
+                    
+                    for (k = 0; k < 2; k++)
+                    {
+                        _longEntryString[this_long_filename_length] = (unsigned char)longent->LDIR_Name3[k];
+                        this_long_filename_length++;
+                    }
+                }
             }
             // done with this sector
             _filePosition.byteCounter = 0;
@@ -556,6 +612,58 @@ struct dir_Structure *getNextDirectoryEntry()
 }
 
 struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstCluster)
+{
+    struct dir_Structure *dir;
+    unsigned char cmp_long_fname;
+    unsigned char cmp_length;
+    unsigned char *ustr;
+    int result;
+    
+    cmp_long_fname = isLongFilename(fileName);
+    cmp_length = numCharsToCompare(fileName);
+    fileName = strupr(fileName);
+    openDirectory(firstCluster);
+    
+    do
+    {
+        dir = getNextDirectoryEntry();
+        
+        if (dir == 0)
+        {
+            // file not found
+            return 0;
+        }
+        
+        if (cmp_long_fname == 1)
+        {
+            if (_filePosition.isLongFilename == 1)
+            {
+                ustr = strupr((unsigned char *)_filePosition.fileName);
+                result = strncmp(fileName, ustr, cmp_length);
+                if (result == 0)
+                {
+                    return dir;
+                }
+            }
+        }
+        else
+        {
+            result = strncmp(fileName, dir->name, cmp_length);
+            if (result == 0)
+            {
+                return dir;
+            }
+        }
+        
+    }
+    while (dir != 0);
+    
+    // if we get here, we haven't found the file
+    return 0;
+}
+
+/*
+struct dir_Structure* findFile2 (unsigned char *fileName, unsigned long firstCluster)
 {
     unsigned long firstSector;
     unsigned long cluster;
@@ -684,6 +792,7 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
         }
     }
 }
+*/
  
 //***************************************************************************
 //Function: if flag=READ then to read file from SD card and send contents to UART 
