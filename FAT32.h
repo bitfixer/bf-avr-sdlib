@@ -212,4 +212,6 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster);
 unsigned char openFileForReading(unsigned char *fileName, unsigned long dirCluster);
 unsigned int getNextFileBlock();
 
+struct dir_Structure *getNextDirectoryEntry();
+
 #endif
