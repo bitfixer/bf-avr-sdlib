@@ -194,7 +194,9 @@ unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, 
 struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstCluster);
 unsigned long getSetNextCluster (unsigned long clusterNumber,unsigned char get_set,unsigned long clusterEntry);
 unsigned char readFile (unsigned char flag, unsigned char *fileName);
-unsigned char convertFileName (unsigned char *fileName);
+//unsigned char convertFileName (unsigned char *fileName);
+
+void convertToShortFilename(unsigned char *input, unsigned char *output);
 void writeFile (unsigned char *fileName);
 void appendFile (void);
 unsigned long searchNextFreeCluster (unsigned long startCluster);
