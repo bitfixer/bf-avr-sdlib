@@ -284,7 +284,8 @@ struct dir_Structure* ListFilesIEEE(unsigned long firstCluster)
         }
         else
         {
-            if((dir->attrib != ATTR_DIRECTORY) && (dir->attrib != ATTR_VOLUME_ID))
+            //if((dir->attrib != ATTR_DIRECTORY) && (dir->attrib != ATTR_VOLUME_ID))
+            if (dir->attrib != ATTR_VOLUME_ID)
             {
                 dir_start += 0x0020;
                 
@@ -333,9 +334,20 @@ struct dir_Structure* ListFilesIEEE(unsigned long firstCluster)
                     entry[startline+7+fname_length+f+1] = ' ';
                 }
                 
-                entry[startline+25] = dir->name[8];
-                entry[startline+26] = dir->name[9];
-                entry[startline+27] = dir->name[10];
+                /*
+                if (dir->attrib == ATTR_DIRECTORY)
+                {
+                    entry[startline+25] = 'D';
+                    entry[startline+26] = 'I';
+                    entry[startline+27] = 'R';
+                }
+                else
+                {
+                */
+                    entry[startline+25] = dir->name[8];
+                    entry[startline+26] = dir->name[9];
+                    entry[startline+27] = dir->name[10];
+                //}
                 
                 entry[startline+28] = ' ';
                 entry[startline+29] = ' ';
