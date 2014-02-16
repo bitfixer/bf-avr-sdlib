@@ -48,35 +48,35 @@ unsigned long	sectorsTotal;		//size of this partition in sectors
 
 //Structure to access boot sector data
 struct BS_Structure{
-unsigned char jumpBoot[3]; //default: 0x009000EB
-unsigned char OEMName[8];
-unsigned int bytesPerSector; //deafault: 512
-unsigned char sectorPerCluster;
-unsigned int reservedSectorCount;
-unsigned char numberofFATs;
-unsigned int rootEntryCount;
-unsigned int totalSectors_F16; //must be 0 for FAT32
-unsigned char mediaType;
-unsigned int FATsize_F16; //must be 0 for FAT32
-unsigned int sectorsPerTrack;
-unsigned int numberofHeads;
-unsigned long hiddenSectors;
-unsigned long totalSectors_F32;
-unsigned long FATsize_F32; //count of sectors occupied by one FAT
-unsigned int extFlags;
-unsigned int FSversion; //0x0000 (defines version 0.0)
-unsigned long rootCluster; //first cluster of root directory (=2)
-unsigned int FSinfo; //sector number of FSinfo structure (=1)
-unsigned int BackupBootSector;
-unsigned char reserved[12];
-unsigned char driveNumber;
-unsigned char reserved1;
-unsigned char bootSignature;
-unsigned long volumeID;
-unsigned char volumeLabel[11]; //"NO NAME "
-unsigned char fileSystemType[8]; //"FAT32"
-unsigned char bootData[420];
-unsigned int bootEndSignature; //0xaa55
+unsigned char jumpBoot[3]; //default: 0x009000EB   //3
+unsigned char OEMName[8];                          //11
+unsigned int bytesPerSector; //deafault: 512       //13
+unsigned char sectorPerCluster;                    //14
+unsigned int reservedSectorCount;                  //16
+unsigned char numberofFATs;                        //17
+unsigned int rootEntryCount;                       //19
+unsigned int totalSectors_F16; //must be 0 for FAT32    //21
+unsigned char mediaType;                           //22
+unsigned int FATsize_F16; //must be 0 for FAT32    //24
+unsigned int sectorsPerTrack;                      //26
+unsigned int numberofHeads;                        //28
+unsigned long hiddenSectors;                       //32
+unsigned long totalSectors_F32;                    //36
+unsigned long FATsize_F32; //count of sectors occupied by one FAT   //40
+unsigned int extFlags;                              //42
+unsigned int FSversion; //0x0000 (defines version 0.0)  //44
+unsigned long rootCluster; //first cluster of root directory (=2) //48
+unsigned int FSinfo; //sector number of FSinfo structure (=1)   //50
+unsigned int BackupBootSector;                      //52
+unsigned char reserved[12];                         //64
+unsigned char driveNumber;                          //65
+unsigned char reserved1;                            //66
+unsigned char bootSignature;                        //67
+unsigned long volumeID;                             //71
+unsigned char volumeLabel[11]; //"NO NAME "         //82
+unsigned char fileSystemType[8]; //"FAT32"          //90
+unsigned char bootData[420];                        //510
+unsigned int bootEndSignature; //0xaa55             //512
 };
 
 
@@ -94,18 +94,19 @@ unsigned long trailSignature; //0xaa550000
 
 //Structure to access Directory Entry in the FAT
 struct dir_Structure{
-unsigned char name[11];
-unsigned char attrib; //file attributes
-unsigned char NTreserved; //always 0
-unsigned char timeTenth; //tenths of seconds, set to 0 here
-unsigned int createTime; //time file was created
-unsigned int createDate; //date file was created
-unsigned int lastAccessDate;
-unsigned int firstClusterHI; //higher word of the first cluster number
-unsigned int writeTime; //time of last write
-unsigned int writeDate; //date of last write
-unsigned int firstClusterLO; //lower word of the first cluster number
-unsigned long fileSize; //size of file in bytes
+unsigned char name[11];     //0
+unsigned char attrib;       //11 //file attributes
+unsigned char NTreserved;   //12 //always 0
+unsigned char timeTenth;    //13 //tenths of seconds, set to 0 here
+unsigned int createTime;    //14 //time file was created
+unsigned int createDate;    //16 //date file was created
+unsigned int lastAccessDate;//18
+unsigned int firstClusterHI;//20 //higher word of the first cluster number
+unsigned int writeTime;     //22 //time of last write
+unsigned int writeDate;     //24 //date of last write
+unsigned int firstClusterLO;//26 //lower word of the first cluster number
+unsigned long fileSize;     //28 //size of file in bytes
+    //32
 };
 
 struct dir_Longentry_Structure{
