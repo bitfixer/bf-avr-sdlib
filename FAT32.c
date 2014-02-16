@@ -30,32 +30,6 @@
 #include "UART_routines.h"
 #include "SD_routines.h"
 
-/*
-void mymemset(unsigned char *ptr, unsigned char val, int num)
-{
-    int i;
-    for (i = 0; i < num; i++)
-    {
-        ptr[i] = val;
-    }
-}
-*/
-
-/*
-int mystrncmp(unsigned char *a, unsigned char *b, int count)
-{
-    int i;
-    for (i = 0; i < count; i++)
-    {
-        if (a[i] != b[i])
-        {
-            return 0;
-        }
-    }
-    return 1;
-}
-*/
-
 //***************************************************************************
 //Function: to read data from boot sector of SD card, to determine important
 //parameters like _bytesPerSector, sectorsPerCluster etc.
@@ -471,13 +445,18 @@ struct dir_Structure *getNextDirectoryEntry()
 void convertToShortFilename(unsigned char *input, unsigned char *output)
 {
     unsigned char extPos;
-    unsigned char inputLen = strlen(input);
+    unsigned char inputLen = 0;
+    
+    while (input[inputLen] != 0)
+    {
+        inputLen++;
+    }
     
     // set empty chars to space
     memset(output, ' ', 11);
     
     extPos = 0;
-    if (inputLen > 5)
+    if (inputLen >= 5)
     {
         if (input[inputLen-4] == '.')
         {
@@ -487,12 +466,16 @@ void convertToShortFilename(unsigned char *input, unsigned char *output)
     
     if (extPos > 0)
     {
-        strncpy(output, input, extPos);
-        strncpy(&output[8], &input[extPos+1], 3);
+        //strncpy(output, input, extPos);
+        //strncpy(&output[8], &input[extPos+1], 3);
+        
+        memcpy(output, input, extPos);
+        memcpy(&output[8], &input[extPos+1], 3);
     }
     else
     {
-        strncpy(output, input, inputLen);
+        //strncpy(output, input, inputLen);
+        memcpy(output, input, inputLen);
     }
 }
 
@@ -721,9 +704,9 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
     // set the start cluster with EOF
     cluster = searchNextFreeCluster(cluster);
     
-    transmitString("First file cluster:\r\n");
-    transmitHex(LONG, cluster);
-    transmitString("\r\n");
+    //transmitString("First file cluster:\r\n");
+    //transmitHex(LONG, cluster);
+    //transmitString("\r\n");
     
     getSetNextCluster(cluster, SET, EOF);   //last cluster of the file, marked EOF
     
@@ -741,15 +724,15 @@ void writeBufferToFile(unsigned int bytesToWrite)
     unsigned long sector;
     // write a block to current file
     
-    transmitString("dircluster: ");
-    transmitHex(LONG, _filePosition.dirStartCluster);
-    transmitString("\r\n");
+    //transmitString("dircluster: ");
+    //transmitHex(LONG, _filePosition.dirStartCluster);
+    //transmitString("\r\n");
      
     sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
     
-    transmitString("sector: ");
-    transmitHex(LONG, sector);
-    transmitString("\r\n");
+    //transmitString("sector: ");
+    //transmitHex(LONG, sector);
+    //transmitString("\r\n");
      
     error = SD_writeSingleBlock(sector);
     _filePosition.fileSize += bytesToWrite;
@@ -788,7 +771,10 @@ void closeFile()
     unsigned char curr_long_entry;
     unsigned long fileNameLong[39];
     
-    islongfilename = isLongFilename(_filePosition.fileName);
+    // TEST
+    //islongfilename = isLongFilename(_filePosition.fileName);
+    islongfilename = 0;
+    
     if (islongfilename == 1)
     {
         makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
@@ -814,11 +800,14 @@ void closeFile()
     {
         // make short filename into FAT format
         convertToShortFilename(_filePosition.fileName, _filePosition.shortFilename);
+        /*
+        memset(_filePosition.shortFilename, ' ', 11);
+        _filePosition.shortFilename[0] = 'P';
+        _filePosition.shortFilename[1] = 'O';
+        _filePosition.shortFilename[2] = 'O';
+        _filePosition.shortFilename[3] = 'P';
+        */
     }
-    
-    transmitString("shortfilename:\r\n");
-    transmitString(_filePosition.shortFilename);
-    transmitString("\r\n");
     
     // set next free cluster in FAT
     getSetFreeCluster (NEXT_FREE, SET, _filePosition.cluster); //update FSinfo next free cluster entry
@@ -865,10 +854,6 @@ void closeFile()
                     //if((dir->name[0] == EMPTY) || (dir->name[0] == DELETED))  //looking for an empty slot to enter file info
                     if (dir->name[0] == EMPTY)
                     {
-                        transmitString("dir byte: ");
-                        transmitHex(INT, i);
-                        transmitString("\r\n");
-                        
                         memcpy(dir->name, _filePosition.shortFilename, 11);
                         
                         dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
@@ -937,15 +922,9 @@ void closeFile()
                         
                         SD_writeSingleBlock (firstSector + sector);
                         
+                        // if there are no long entries remaining, set a flag so the next entry is the FAT short entry
                         if (curr_long_entry == 0)
                         {
-                            // copy the short filename
-                            /*
-                            for (j = 0; j < 11; j++)
-                            {
-                                fileName[j] = shortfilename[j];
-                            }
-                            */
                             islongfilename = 0;
                         }
                     }
@@ -1023,51 +1002,6 @@ void openFile(unsigned char *fileName, unsigned long *startcluster)
 //Arguments: pointer to the file name
 //return: none
 //************************************************************************************
-
-/*
-void writeFileFromIEEE ()
-{
-    unsigned int numBytes;
-    unsigned char rdchar;
-    unsigned char rdbus;
-    unsigned char data;
-    
-    numBytes = 0;
-    do
-    {
-        wait_for_dav_low();
-        PORTC = NOT_NDAC & NOT_NRFD;
-        // read byte
-        recv_byte_IEEE(&rdchar);
-        rdbus = PINC;
-        
-        data = rdchar;
-        
-        _buffer[numBytes++] = data;
-        
-        if(numBytes >= 512)   //though 'i' will never become greater than 512, it's kept here to avoid
-        {				//infinite loop in case it happens to be greater than 512 due to some data corruption
-            numBytes = 0;
-            writeBufferToFile(numBytes);
-        }
-        
-        // raise NDAC
-        PORTC = NOT_NRFD;
-        wait_for_dav_high();
-        PORTC = NOT_NDAC;
-	}
-    while((rdbus & EOI) != 0x00);
-    
-    //if((rdbus & EOI) == 0x00)
-    
-    if (numBytes > 0)
-    {
-        writeBufferToFile(numBytes);
-    }
-    
-    closeFile();
-}
-*/
 
 /*
 void writeFileFromIEEE (unsigned char *fileName, unsigned long StartCluster)
