@@ -827,7 +827,6 @@ void closeFile()
     unsigned char num_long_entries;
     unsigned char curr_fname_pos;
     unsigned char curr_long_entry;
-    //unsigned long *fileNameLong;
     
     transmitString(_filePosition.fileName);
     TX_NEWLINE;
@@ -853,32 +852,7 @@ void closeFile()
         fname_remainder = fname_len % 13;
         num_long_entries = ((fname_len - fname_remainder) / 13) + 1;
         
-        /*
-        curr_fname_pos = 0;
-        for (j = 0; j < fname_len+1; j++)
-        {
-            fileNameLong[j] = _filePosition.fileName[j];
-        }
-        for (j = fname_len+1; j < 39; j++)
-        {
-            fileNameLong[j] = 0xffff;
-        }
-        */
-        
         curr_long_entry = num_long_entries;
-        
-        
-        //makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
-        //islongfilename = 0;
-        /*
-        memset(_filePosition.shortFilename, ' ', 11);
-        _filePosition.shortFilename[0] = 'T';
-        _filePosition.shortFilename[1] = 'E';
-        _filePosition.shortFilename[2] = 'R';
-        _filePosition.shortFilename[3] = 'T';
-        */
-        
-        //makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
         
     }
     else
@@ -887,24 +861,10 @@ void closeFile()
         convertToShortFilename(_filePosition.fileName, _filePosition.shortFilename);
     }
     
-    /*
-    transmitString("filenames: \r\n");
-    transmitString(_filePosition.fileName);
-    transmitString("\r\n");
-    transmitString(_filePosition.shortFilename);
-    transmitString("\r\n\r\n");
-    */
-    
     // set next free cluster in FAT
     getSetFreeCluster (NEXT_FREE, SET, _filePosition.cluster); //update FSinfo next free cluster entry
     
     prevCluster = _filePosition.dirStartCluster;
-    
-    /*
-    transmitString("prevcluster: ");
-    transmitHex(LONG, prevCluster);
-    transmitString("\r\n");
-    */
     
     printFileInfo();
     
@@ -932,7 +892,6 @@ void closeFile()
                     dir->name[0] = EMPTY;
                     SD_writeSingleBlock(firstSector + sector);
                     
-                    //transmitString("free memory update\r\n");
                     freeMemoryUpdate (REMOVE, _filePosition.fileSize); //updating free memory count in FSinfo sector
                     return;
                 }
@@ -972,10 +931,7 @@ void closeFile()
                     if (dir->name[0] == EMPTY)
                     {
                         // create long directory entry
-                        //transmitString("lent\r\n");
-                        
                         longent = (struct dir_Longentry_Structure *) &_buffer[i];
-                        
                         memset(longent, 0xff, 32);
                         
                         // fill in the long entry fields
@@ -1008,25 +964,6 @@ void closeFile()
                         {
                             longent->LDIR_Name3[j++] = _filePosition.fileName[curr_fname_pos++];
                         }
-                        
-                        
-                        /*
-                        longent->LDIR_Name1[0] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name1[1] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name1[2] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name1[3] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name1[4] = fileNameLong[curr_fname_pos++];
-                        
-                        longent->LDIR_Name2[0] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name2[1] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name2[2] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name2[3] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name2[4] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name2[5] = fileNameLong[curr_fname_pos++];
-                        
-                        longent->LDIR_Name3[0] = fileNameLong[curr_fname_pos++];
-                        longent->LDIR_Name3[1] = fileNameLong[curr_fname_pos++];
-                        */
                         
                         longent->LDIR_Attr = ATTR_LONG_NAME;
                         longent->LDIR_Type = 0;
