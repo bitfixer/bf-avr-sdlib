@@ -466,15 +466,11 @@ void convertToShortFilename(unsigned char *input, unsigned char *output)
     
     if (extPos > 0)
     {
-        //strncpy(output, input, extPos);
-        //strncpy(&output[8], &input[extPos+1], 3);
-        
         memcpy(output, input, extPos);
         memcpy(&output[8], &input[extPos+1], 3);
     }
     else
     {
-        //strncpy(output, input, inputLen);
         memcpy(output, input, inputLen);
     }
 }
@@ -751,6 +747,41 @@ void writeBufferToFile(unsigned int bytesToWrite)
     }
 }
 
+void printFileInfo()
+{
+    //transmitString("filename: ");
+    transmitString(_filePosition.fileName);
+    transmitString("\r\n");
+    
+    //transmitString("startCluster: ");
+    transmitHex(LONG, _filePosition.startCluster);
+    transmitString("\r\n");
+    
+    //transmitString("cluster: ");
+    transmitHex(LONG, _filePosition.cluster);
+    transmitString("\r\n");
+    
+    //transmitString("dirStartCluster: ");
+    transmitHex(LONG, _filePosition.dirStartCluster);
+    transmitString("\r\n");
+    
+    //transmitString("sectorIndex: ");
+    transmitHex(CHAR, _filePosition.sectorIndex);
+    transmitString("\r\n");
+    
+    //transmitString("fileSize: ");
+    transmitHex(LONG, _filePosition.fileSize);
+    transmitString("\r\n");
+    
+    //transmitString("shortfilename: ");
+    transmitString(_filePosition.shortFilename);
+    transmitString("\r\n");
+    
+    //transmitString("_rootCluster: ");
+    transmitHex(LONG, _rootCluster);
+    transmitString("\r\n");
+}
+
 void closeFile()
 {
     unsigned char fileCreatedFlag = 0;
@@ -772,11 +803,11 @@ void closeFile()
     unsigned long fileNameLong[39];
     
     // TEST
-    //islongfilename = isLongFilename(_filePosition.fileName);
-    islongfilename = 0;
+    islongfilename = isLongFilename(_filePosition.fileName);
     
     if (islongfilename == 1)
     {
+        /*
         makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
         checkSum = ChkSum(_filePosition.shortFilename);
         
@@ -795,24 +826,39 @@ void closeFile()
         }
         
         curr_long_entry = num_long_entries;
+        */
+        
+        //makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
+        islongfilename = 0;
+        
+        memset(_filePosition.shortFilename, ' ', 11);
+        /*
+        _filePosition.shortFilename[0] = 'T';
+        _filePosition.shortFilename[1] = 'E';
+        _filePosition.shortFilename[2] = 'S';
+        _filePosition.shortFilename[3] = 'T';
+        */
+        
+        makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
+        
     }
     else
     {
         // make short filename into FAT format
         convertToShortFilename(_filePosition.fileName, _filePosition.shortFilename);
-        /*
-        memset(_filePosition.shortFilename, ' ', 11);
-        _filePosition.shortFilename[0] = 'P';
-        _filePosition.shortFilename[1] = 'O';
-        _filePosition.shortFilename[2] = 'O';
-        _filePosition.shortFilename[3] = 'P';
-        */
     }
+    
+    /*
+    transmitString("filenames: \r\n");
+    transmitString(_filePosition.fileName);
+    transmitString("\r\n");
+    transmitString(_filePosition.shortFilename);
+    transmitString("\r\n\r\n");
+    */
     
     // set next free cluster in FAT
     getSetFreeCluster (NEXT_FREE, SET, _filePosition.cluster); //update FSinfo next free cluster entry
     
-    //prevCluster = _rootCluster;
     prevCluster = _filePosition.dirStartCluster;
     
     /*
@@ -820,7 +866,9 @@ void closeFile()
     transmitHex(LONG, prevCluster);
     transmitString("\r\n");
     */
-     
+    
+    printFileInfo();
+    
     while(1)
     {
         firstSector = getFirstSector (prevCluster);
@@ -845,6 +893,7 @@ void closeFile()
                     dir->name[0] = EMPTY;
                     SD_writeSingleBlock(firstSector + sector);
                     
+                    transmitString("free memory update\r\n");
                     freeMemoryUpdate (REMOVE, _filePosition.fileSize); //updating free memory count in FSinfo sector
                     return;
                 }
