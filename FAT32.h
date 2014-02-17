@@ -183,6 +183,7 @@ unsigned char _freeClusterCountUpdated;
 volatile unsigned long _fileStartCluster;
 
 volatile unsigned char _longEntryString[MAX_FILENAME];
+//volatile unsigned long _fileNameLong[MAX_FILENAME];
 volatile file_position _filePosition;
 
 

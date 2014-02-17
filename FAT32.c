@@ -176,7 +176,13 @@ unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, 
 
 unsigned char isLongFilename(unsigned char *fileName)
 {
-    unsigned char filenameLength = strlen(fileName);
+    //unsigned char filenameLength = strlen(fileName);
+    unsigned char filenameLength = 0;
+    while (fileName[filenameLength] != 0)
+    {
+        filenameLength++;
+    }
+    
     // if file is longer than 12 characters, not possible to be short filename
     if (filenameLength > 12)
     {
@@ -684,11 +690,25 @@ unsigned int getNextFileBlock()
 void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
 {
     unsigned long cluster;
+    unsigned char i;
+    
+    transmitString("QQ");
     
     // use existing buffer for filename
     _filePosition.fileName = _longEntryString;
     memset(_filePosition.fileName, 0, MAX_FILENAME);
-    strcpy(_filePosition.fileName, fileName);
+    //strcpy(_filePosition.fileName, fileName);
+    
+    transmitString("PP");
+    i = 0;
+    while (fileName[i] != 0)
+    {
+        transmitHex(CHAR, i);
+        _filePosition.fileName[i] = fileName[i];
+        i++;
+    }
+
+    memset(_filePosition.shortFilename, 0, 11);
     
     // find the start cluster for this file
     cluster = getSetFreeCluster(NEXT_FREE, GET, 0);
@@ -745,41 +765,48 @@ void writeBufferToFile(unsigned int bytesToWrite)
         getSetNextCluster(nextCluster, SET, EOF);
         _filePosition.cluster = nextCluster;
     }
+    
+    printFileInfo();
 }
 
 void printFileInfo()
 {
     //transmitString("filename: ");
-    transmitString(_filePosition.fileName);
-    transmitString("\r\n");
     
+    TX_NEWLINE;
+    TX_NEWLINE;
+    transmitString(_filePosition.fileName);
+    TX_NEWLINE;
+    
+    /*
     //transmitString("startCluster: ");
     transmitHex(LONG, _filePosition.startCluster);
-    transmitString("\r\n");
+    TX_NEWLINE;
     
     //transmitString("cluster: ");
     transmitHex(LONG, _filePosition.cluster);
-    transmitString("\r\n");
+    TX_NEWLINE;
     
     //transmitString("dirStartCluster: ");
     transmitHex(LONG, _filePosition.dirStartCluster);
-    transmitString("\r\n");
+    TX_NEWLINE;
     
     //transmitString("sectorIndex: ");
     transmitHex(CHAR, _filePosition.sectorIndex);
-    transmitString("\r\n");
+    TX_NEWLINE;
     
     //transmitString("fileSize: ");
     transmitHex(LONG, _filePosition.fileSize);
-    transmitString("\r\n");
+    TX_NEWLINE;
+    */
     
     //transmitString("shortfilename: ");
     transmitString(_filePosition.shortFilename);
-    transmitString("\r\n");
+    TX_NEWLINE;
     
     //transmitString("_rootCluster: ");
     transmitHex(LONG, _rootCluster);
-    transmitString("\r\n");
+    TX_NEWLINE;
 }
 
 void closeFile()
@@ -800,14 +827,25 @@ void closeFile()
     unsigned char num_long_entries;
     unsigned char curr_fname_pos;
     unsigned char curr_long_entry;
-    unsigned long fileNameLong[39];
+    //unsigned long *fileNameLong;
+    
+    transmitString(_filePosition.fileName);
+    TX_NEWLINE;
+    transmitHex(LONG, _rootCluster);
+    TX_NEWLINE;
+    
+    printFileInfo();
     
     // TEST
     islongfilename = isLongFilename(_filePosition.fileName);
+    transmitHex(CHAR, islongfilename);
+    TX_NEWLINE;
+    printFileInfo();
     
     if (islongfilename == 1)
     {
-        /*
+        //fileNameLong = _fileNameLong;
+        memset(_filePosition.shortFilename, ' ', 11);
         makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
         checkSum = ChkSum(_filePosition.shortFilename);
         
@@ -815,6 +853,7 @@ void closeFile()
         fname_remainder = fname_len % 13;
         num_long_entries = ((fname_len - fname_remainder) / 13) + 1;
         
+        /*
         curr_fname_pos = 0;
         for (j = 0; j < fname_len+1; j++)
         {
@@ -824,22 +863,22 @@ void closeFile()
         {
             fileNameLong[j] = 0xffff;
         }
-        
-        curr_long_entry = num_long_entries;
         */
         
-        //makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
-        islongfilename = 0;
+        curr_long_entry = num_long_entries;
         
-        memset(_filePosition.shortFilename, ' ', 11);
+        
+        //makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
+        //islongfilename = 0;
         /*
+        memset(_filePosition.shortFilename, ' ', 11);
         _filePosition.shortFilename[0] = 'T';
         _filePosition.shortFilename[1] = 'E';
-        _filePosition.shortFilename[2] = 'S';
+        _filePosition.shortFilename[2] = 'R';
         _filePosition.shortFilename[3] = 'T';
         */
         
-        makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
+        //makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
         
     }
     else
@@ -893,7 +932,7 @@ void closeFile()
                     dir->name[0] = EMPTY;
                     SD_writeSingleBlock(firstSector + sector);
                     
-                    transmitString("free memory update\r\n");
+                    //transmitString("free memory update\r\n");
                     freeMemoryUpdate (REMOVE, _filePosition.fileSize); //updating free memory count in FSinfo sector
                     return;
                 }
@@ -903,6 +942,7 @@ void closeFile()
                     //if((dir->name[0] == EMPTY) || (dir->name[0] == DELETED))  //looking for an empty slot to enter file info
                     if (dir->name[0] == EMPTY)
                     {
+                        //transmitString("short\r\n");
                         memcpy(dir->name, _filePosition.shortFilename, 11);
                         
                         dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
@@ -932,8 +972,11 @@ void closeFile()
                     if (dir->name[0] == EMPTY)
                     {
                         // create long directory entry
+                        //transmitString("lent\r\n");
                         
                         longent = (struct dir_Longentry_Structure *) &_buffer[i];
+                        
+                        memset(longent, 0xff, 32);
                         
                         // fill in the long entry fields
                         if (curr_long_entry == num_long_entries)
@@ -948,6 +991,26 @@ void closeFile()
                         curr_long_entry--;
                         curr_fname_pos = curr_long_entry * 13;
                         
+                        j = 0;
+                        while (curr_fname_pos < fname_len && j < 5)
+                        {
+                            longent->LDIR_Name1[j++] = _filePosition.fileName[curr_fname_pos++];
+                        }
+                        
+                        j = 0;
+                        while (curr_fname_pos < fname_len && j < 6)
+                        {
+                            longent->LDIR_Name2[j++] = _filePosition.fileName[curr_fname_pos++];
+                        }
+                        
+                        j = 0;
+                        while (curr_fname_pos < fname_len && j < 2)
+                        {
+                            longent->LDIR_Name3[j++] = _filePosition.fileName[curr_fname_pos++];
+                        }
+                        
+                        
+                        /*
                         longent->LDIR_Name1[0] = fileNameLong[curr_fname_pos++];
                         longent->LDIR_Name1[1] = fileNameLong[curr_fname_pos++];
                         longent->LDIR_Name1[2] = fileNameLong[curr_fname_pos++];
@@ -963,6 +1026,7 @@ void closeFile()
                         
                         longent->LDIR_Name3[0] = fileNameLong[curr_fname_pos++];
                         longent->LDIR_Name3[1] = fileNameLong[curr_fname_pos++];
+                        */
                         
                         longent->LDIR_Attr = ATTR_LONG_NAME;
                         longent->LDIR_Type = 0;
