@@ -203,7 +203,7 @@ void writeFile (unsigned char *fileName);
 void appendFile (void);
 unsigned long searchNextFreeCluster (unsigned long startCluster);
 void displayMemory (unsigned char flag, unsigned long memory);
-void deleteFile (unsigned char *fileName);
+void deleteFile();
 void freeMemoryUpdate (unsigned char flag, unsigned long size);
 unsigned char ChkSum (unsigned char *pFcbName);
 
