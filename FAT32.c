@@ -383,6 +383,14 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
     cmp_length = numCharsToCompare(findFileStr, maxChars);
     openDirectory(firstCluster);
     
+    transmitString(findFileStr);
+    TX_NEWLINE;
+    
+    transmitHex(CHAR, cmp_long_fname);
+    TX_NEWLINE;
+    transmitHex(CHAR, cmp_length);
+    TX_NEWLINE;
+    
     do
     {
         dir = getNextDirectoryEntry();
@@ -407,7 +415,14 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
         }
         else
         {
+            transmitString(dir->name);
+            TX_NEWLINE;
+            
             result = strncmp(findFileStr, dir->name, cmp_length);
+            
+            transmitHex(INT, result);
+            TX_NEWLINE;
+            
             if (result == 0)
             {
                 return dir;
@@ -539,10 +554,9 @@ void writeBufferToFile(unsigned int bytesToWrite)
         getSetNextCluster(nextCluster, SET, EOF);
         _filePosition.cluster = nextCluster;
     }
-    
-    printFileInfo();
 }
 
+/*
 void printFileInfo()
 {
     //transmitString("filename: ");
@@ -552,7 +566,6 @@ void printFileInfo()
     transmitString(_filePosition.fileName);
     TX_NEWLINE;
     
-    /*
     //transmitString("startCluster: ");
     transmitHex(LONG, _filePosition.startCluster);
     TX_NEWLINE;
@@ -572,7 +585,6 @@ void printFileInfo()
     //transmitString("fileSize: ");
     transmitHex(LONG, _filePosition.fileSize);
     TX_NEWLINE;
-    */
     
     //transmitString("shortfilename: ");
     transmitString(_filePosition.shortFilename);
@@ -582,6 +594,7 @@ void printFileInfo()
     transmitHex(LONG, _rootCluster);
     TX_NEWLINE;
 }
+*/
 
 void closeFile()
 {
@@ -601,14 +614,6 @@ void closeFile()
     unsigned char num_long_entries;
     unsigned char curr_fname_pos;
     unsigned char curr_long_entry;
-    
-    /*
-    transmitString(_filePosition.fileName);
-    TX_NEWLINE;
-    transmitHex(LONG, _rootCluster);
-    TX_NEWLINE;
-    printFileInfo();
-    */
      
     // TEST
     islongfilename = isLongFilename(_filePosition.fileName);
@@ -637,8 +642,6 @@ void closeFile()
     getSetFreeCluster (NEXT_FREE, SET, _filePosition.cluster); //update FSinfo next free cluster entry
     
     prevCluster = _filePosition.dirStartCluster;
-    
-    printFileInfo();
     
     while(1)
     {
@@ -795,23 +798,6 @@ unsigned long searchNextFreeCluster (unsigned long startCluster)
     transmitString("no free sectors\r\n");
  return 0;
 }
-
-//********************************************************************
-//Function: to delete a specified file from the root directory
-//Arguments: pointer to the file name
-//return: none
-//********************************************************************
-/*
-void deleteFile (unsigned char *fileName)
-{
-  unsigned char error;
-
-  error = convertFileName (fileName);
-  if(error) return;
-
-  findFiles (DELETE, fileName);
-}
-*/
 
 //********************************************************************
 //Function: update the free memory count in the FSinfo sector. 
