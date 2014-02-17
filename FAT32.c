@@ -828,18 +828,17 @@ void closeFile()
     unsigned char curr_fname_pos;
     unsigned char curr_long_entry;
     
+    /*
     transmitString(_filePosition.fileName);
     TX_NEWLINE;
     transmitHex(LONG, _rootCluster);
     TX_NEWLINE;
-    
     printFileInfo();
-    
+    */
+     
     // TEST
     islongfilename = isLongFilename(_filePosition.fileName);
     transmitHex(CHAR, islongfilename);
-    TX_NEWLINE;
-    printFileInfo();
     
     if (islongfilename == 1)
     {
@@ -853,7 +852,6 @@ void closeFile()
         num_long_entries = ((fname_len - fname_remainder) / 13) + 1;
         
         curr_long_entry = num_long_entries;
-        
     }
     else
     {
@@ -874,15 +872,8 @@ void closeFile()
         
         for(sector = 0; sector < _sectorPerCluster; sector++)
         {
-            
             SD_readSingleBlock (firstSector + sector);
             
-            /*
-            transmitString("currsector: ");
-            transmitHex(LONG, firstSector+sector);
-            transmitString("\r\n");
-            */
-             
             for( i = 0; i < _bytesPerSector; i += 32)
             {
                 dir = (struct dir_Structure *) &_buffer[i];
@@ -898,10 +889,8 @@ void closeFile()
                 
                 if (islongfilename == 0)
                 {
-                    //if((dir->name[0] == EMPTY) || (dir->name[0] == DELETED))  //looking for an empty slot to enter file info
                     if (dir->name[0] == EMPTY)
                     {
-                        //transmitString("short\r\n");
                         memcpy(dir->name, _filePosition.shortFilename, 11);
                         
                         dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
@@ -1376,9 +1365,6 @@ unsigned long searchNextFreeCluster (unsigned long startCluster)
     for(cluster =startCluster; cluster <_totalClusters; cluster+=128) 
     {
       sector = _unusedSectors + _reservedSectorCount + ((cluster * 4) / _bytesPerSector);
-        transmitString("sector: ");
-        transmitHex(LONG, sector);
-        transmitString("\r\n");
       SD_readSingleBlock(sector);
       for(i=0; i<128; i++)
       {
