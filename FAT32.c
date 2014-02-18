@@ -659,6 +659,12 @@ void closeFile()
         num_long_entries = ((fname_len - fname_remainder) / 13) + 1;
         
         curr_long_entry = num_long_entries;
+        
+        /*
+        transmitString("closefile:");
+        transmitHex(CHAR, fname_len);
+        TX_NEWLINE;
+        */
     }
     else
     {
@@ -742,19 +748,19 @@ void closeFile()
                         curr_fname_pos = curr_long_entry * 13;
                         
                         j = 0;
-                        while (curr_fname_pos < fname_len && j < 5)
+                        while (curr_fname_pos <= fname_len && j < 5)
                         {
                             longent->LDIR_Name1[j++] = _filePosition.fileName[curr_fname_pos++];
                         }
                         
                         j = 0;
-                        while (curr_fname_pos < fname_len && j < 6)
+                        while (curr_fname_pos <= fname_len && j < 6)
                         {
                             longent->LDIR_Name2[j++] = _filePosition.fileName[curr_fname_pos++];
                         }
                         
                         j = 0;
-                        while (curr_fname_pos < fname_len && j < 2)
+                        while (curr_fname_pos <= fname_len && j < 2)
                         {
                             longent->LDIR_Name3[j++] = _filePosition.fileName[curr_fname_pos++];
                         }
