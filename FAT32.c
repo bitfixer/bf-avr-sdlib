@@ -178,6 +178,7 @@ unsigned char isLongFilename(unsigned char *fileName)
 {
     //unsigned char filenameLength = strlen(fileName);
     unsigned char filenameLength = 0;
+    unsigned char i;
     while (fileName[filenameLength] != 0)
     {
         filenameLength++;
@@ -199,6 +200,20 @@ unsigned char isLongFilename(unsigned char *fileName)
             return 1;
         }
     }
+    
+    // check if it contains a space
+    for (i = 0; i < filenameLength; i++)
+    {
+        //transmitString("checking: ");
+        //transmitByte(fileName[i]);
+        //TX_NEWLINE;
+        if (fileName[i] == ' ')
+        {
+            // short filenames cannot have spaces
+            return 1;
+        }
+    }
+    
     
     return 0;
 }
@@ -325,13 +340,17 @@ struct dir_Structure *getNextDirectoryEntry()
 void convertToShortFilename(unsigned char *input, unsigned char *output)
 {
     unsigned char extPos;
-    unsigned char inputLen = 0;
+    unsigned char inputLen;
     
+    /*
     while (input[inputLen] != 0)
     {
         inputLen++;
     }
+    */
     
+    inputLen = strlen(input);
+     
     // set empty chars to space
     memset(output, ' ', 11);
     
@@ -383,14 +402,15 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
     cmp_length = numCharsToCompare(findFileStr, maxChars);
     openDirectory(firstCluster);
     
+    /*
     transmitString(findFileStr);
     TX_NEWLINE;
-    
     transmitHex(CHAR, cmp_long_fname);
     TX_NEWLINE;
     transmitHex(CHAR, cmp_length);
     TX_NEWLINE;
-    
+    */
+     
     do
     {
         dir = getNextDirectoryEntry();
@@ -407,6 +427,14 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
             {
                 ustr = strupr((unsigned char *)_filePosition.fileName);
                 result = strncmp(findFileStr, ustr, cmp_length);
+                
+                /*
+                transmitString(ustr);
+                TX_NEWLINE;
+                transmitHex(INT, result);
+                TX_NEWLINE;
+                */
+                 
                 if (result == 0)
                 {
                     return dir;
@@ -415,13 +443,13 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
         }
         else
         {
-            transmitString(dir->name);
-            TX_NEWLINE;
+            //transmitString(dir->name);
+            //TX_NEWLINE;
             
             result = strncmp(findFileStr, dir->name, cmp_length);
             
-            transmitHex(INT, result);
-            TX_NEWLINE;
+            //transmitHex(INT, result);
+            //TX_NEWLINE;
             
             if (result == 0)
             {
