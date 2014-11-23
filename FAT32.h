@@ -191,12 +191,9 @@ volatile file_position _filePosition;
 unsigned char getBootSectorData (void);
 unsigned long getFirstSector(unsigned long clusterNumber);
 unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, unsigned long FSEntry);
-//struct dir_Structure* findFiles (unsigned char flag, unsigned char *fileName);
-//struct dir_Structure* findFiles2 (unsigned char flag, unsigned char *fileName, unsigned char cmp_long_fname, unsigned long firstCluster);
 struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstCluster);
 unsigned long getSetNextCluster (unsigned long clusterNumber,unsigned char get_set,unsigned long clusterEntry);
 unsigned char readFile (unsigned char flag, unsigned char *fileName);
-//unsigned char convertFileName (unsigned char *fileName);
 
 void convertToShortFilename(unsigned char *input, unsigned char *output);
 void writeFile (unsigned char *fileName);
@@ -217,9 +214,11 @@ unsigned char openFileForReading(unsigned char *fileName, unsigned long dirClust
 unsigned int getNextFileBlock();
 void writeBufferToFile(unsigned int bytesToWrite);
 void closeFile();
+void makeShortFilename(unsigned char *longFilename, unsigned char *shortFilename);
 
 void openDirectory(unsigned long firstCluster);
 
 struct dir_Structure *getNextDirectoryEntry();
+unsigned char ChkSum (unsigned char *pFcbName);
 
 #endif

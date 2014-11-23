@@ -61,11 +61,11 @@ void uart0_init(unsigned int ubrr)
 //*************************************************
 unsigned char receiveByte( void )
 {
-	unsigned char data, status;
+	unsigned char data;
 	
 	while(!(UCSR0A & (1<<RXC0))); 	// Wait for incomming data
 	
-	status = UCSR0A;
+	//status = UCSR0A;
 	data = UDR0;
 	
 	return(data);

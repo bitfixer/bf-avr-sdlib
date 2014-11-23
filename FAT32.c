@@ -149,8 +149,7 @@ unsigned long getSetNextCluster (unsigned long clusterNumber,
 unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, unsigned long FSEntry)
 {
     struct FSInfo_Structure *FS = (struct FSInfo_Structure *) &_buffer;
-    unsigned char error;
-
+    
     SD_readSingleBlock(_unusedSectors + 1);
 
     if((FS->leadSignature != 0x41615252) || (FS->structureSignature != 0x61417272) || (FS->trailSignature !=0xaa550000))
@@ -170,7 +169,7 @@ unsigned long getSetFreeCluster(unsigned char totOrNext, unsigned char get_set, 
        else // when totOrNext = NEXT_FREE
     	  FS->nextFreeCluster = FSEntry;
      
-       error = SD_writeSingleBlock(_unusedSectors + 1);	//update FSinfo
+       SD_writeSingleBlock(_unusedSectors + 1);	//update FSinfo
      }
      return 0xffffffff;
 }
@@ -332,7 +331,7 @@ struct dir_Structure *getNextDirectoryEntry()
         }
         if (_filePosition.cluster == 0)
         {
-            transmitString_F(PSTR("Error in getting cluster"));
+            transmitString_F((char *)PSTR("Error in getting cluster"));
             return 0;
         }
     }
@@ -350,7 +349,7 @@ void convertToShortFilename(unsigned char *input, unsigned char *output)
     }
     */
     
-    inputLen = (unsigned char)strlen(input);
+    inputLen = (unsigned char)strlen((char *)input);
      
     // set empty chars to space
     memset(output, ' ', 11);
@@ -426,8 +425,8 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
         {
             if (_filePosition.isLongFilename == 1)
             {
-                ustr = strupr((unsigned char *)_filePosition.fileName);
-                result = strncmp(findFileStr, ustr, cmp_length);
+                ustr = (unsigned char *)strupr((char *)_filePosition.fileName);
+                result = strncmp((char *)findFileStr, (char *)ustr, cmp_length);
                 
                 /*
                 transmitString(ustr);
@@ -447,7 +446,7 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
             //transmitString(dir->name);
             //TX_NEWLINE;
             
-            result = strncmp(findFileStr, dir->name, cmp_length);
+            result = strncmp((char *)findFileStr, (char *)dir->name, cmp_length);
             
             //transmitHex(INT, result);
             //TX_NEWLINE;
@@ -494,7 +493,6 @@ unsigned char openFileForReading(unsigned char *fileName, unsigned long dirClust
 unsigned int getNextFileBlock()
 {
     unsigned long sector;
-    unsigned char error;
     
     // if cluster has no more sectors, move to next cluster
     if (_filePosition.sectorIndex == _sectorPerCluster)
@@ -505,7 +503,7 @@ unsigned int getNextFileBlock()
     
     sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
     
-    error = SD_readSingleBlock(sector);
+    SD_readSingleBlock(sector);
     _filePosition.byteCounter += 512;
     _filePosition.sectorIndex++;
     
@@ -527,7 +525,7 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
     unsigned char i;
     
     // use existing buffer for filename
-    _filePosition.fileName = _longEntryString;
+    _filePosition.fileName = (unsigned char *)_longEntryString;
     memset(_filePosition.fileName, 0, MAX_FILENAME);
     //strcpy(_filePosition.fileName, fileName);
     
@@ -539,7 +537,7 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
         i++;
     }
 
-    memset(_filePosition.shortFilename, 0, 11);
+    memset((void *)_filePosition.shortFilename, 0, 11);
     
     // find the start cluster for this file
     cluster = getSetFreeCluster(NEXT_FREE, GET, 0);
@@ -562,13 +560,12 @@ void openFileForWriting(unsigned char *fileName, unsigned long dirCluster)
 
 void writeBufferToFile(unsigned int bytesToWrite)
 {
-    unsigned char error;
     unsigned long nextCluster;
     unsigned long sector;
     // write a block to current file
     sector = getFirstSector(_filePosition.cluster) + _filePosition.sectorIndex;
     
-    error = SD_writeSingleBlock(sector);
+    SD_writeSingleBlock(sector);
     _filePosition.fileSize += bytesToWrite;
     _filePosition.sectorIndex++;
     
@@ -644,18 +641,20 @@ void closeFile()
     unsigned char curr_fname_pos;
     unsigned char curr_long_entry;
      
-    // TEST
     islongfilename = isLongFilename(_filePosition.fileName);
     transmitHex(CHAR, islongfilename);
+    num_long_entries = 0;
+    fname_len = 0;
+    checkSum = 0;
+    curr_long_entry = 0;
     
     if (islongfilename == 1)
     {
-        //fileNameLong = _fileNameLong;
-        memset(_filePosition.shortFilename, ' ', 11);
-        makeShortFilename(_filePosition.fileName, _filePosition.shortFilename);
-        checkSum = ChkSum(_filePosition.shortFilename);
+        memset((void *)_filePosition.shortFilename, ' ', 11);
+        makeShortFilename(_filePosition.fileName, (unsigned char *)_filePosition.shortFilename);
+        checkSum = ChkSum((unsigned char *)_filePosition.shortFilename);
         
-        fname_len = strlen(_filePosition.fileName);
+        fname_len = strlen((char *)_filePosition.fileName);
         fname_remainder = fname_len % 13;
         num_long_entries = ((fname_len - fname_remainder) / 13) + 1;
         
@@ -670,7 +669,7 @@ void closeFile()
     else
     {
         // make short filename into FAT format
-        convertToShortFilename(_filePosition.fileName, _filePosition.shortFilename);
+        convertToShortFilename(_filePosition.fileName, (unsigned char *)_filePosition.shortFilename);
     }
     
     // set next free cluster in FAT
@@ -703,7 +702,7 @@ void closeFile()
                 {
                     if (dir->name[0] == EMPTY)
                     {
-                        memcpy(dir->name, _filePosition.shortFilename, 11);
+                        memcpy((void *)dir->name, (void *)_filePosition.shortFilename, 11);
                         
                         dir->attrib = ATTR_ARCHIVE;	//settting file attribute as 'archive'
                         dir->NTreserved = 0;			//always set to 0
@@ -724,7 +723,7 @@ void closeFile()
                         SD_writeSingleBlock (firstSector + sector);
                         fileCreatedFlag = 1;
                         
-                        transmitString_F(PSTR(" File Created!"));
+                        transmitString_F((char *)PSTR(" File Created!"));
                     }
                 }
                 else
@@ -796,11 +795,11 @@ void closeFile()
             
             else
             {	
-                transmitString_F(PSTR("End of Cluster Chain")); 
+                transmitString_F((char *)PSTR("End of Cluster Chain"));
                 return;
             }
         }
-        if(cluster == 0) {transmitString_F(PSTR("Error in getting cluster")); return;}
+        if(cluster == 0) {transmitString_F((char *)PSTR("Error in getting cluster")); return;}
         
         prevCluster = cluster;
     }
@@ -830,7 +829,7 @@ unsigned long searchNextFreeCluster (unsigned long startCluster)
       }  
     } 
 
-    transmitString("no free sectors\r\n");
+    transmitString((unsigned char *)"no free sectors\r\n");
  return 0;
 }
 
