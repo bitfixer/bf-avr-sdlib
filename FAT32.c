@@ -29,6 +29,7 @@
 #include "FAT32.h"
 #include "UART_routines.h"
 #include "SD_routines.h"
+#include <string.h>
 
 //***************************************************************************
 //Function: to read data from boot sector of SD card, to determine important
@@ -262,9 +263,9 @@ struct dir_Structure *getNextDirectoryEntry()
     unsigned char k;
     
     // reset long entry info
-    memset(_longEntryString, 0, MAX_FILENAME);
+    memset((void *)_longEntryString, 0, MAX_FILENAME);
     _filePosition.isLongFilename = 0;
-    _filePosition.fileName = _longEntryString;
+    _filePosition.fileName = (unsigned char *)_longEntryString;
     
     while(1)
     {
@@ -349,7 +350,7 @@ void convertToShortFilename(unsigned char *input, unsigned char *output)
     }
     */
     
-    inputLen = strlen(input);
+    inputLen = (unsigned char)strlen(input);
      
     // set empty chars to space
     memset(output, ' ', 11);
@@ -388,13 +389,13 @@ struct dir_Structure* findFile (unsigned char *fileName, unsigned long firstClus
     
     if (cmp_long_fname == 1)
     {
-        fileName = strupr(fileName);
+        fileName = (unsigned char *)strupr((char *)fileName);
         findFileStr = fileName;
         maxChars = 32;
     }
     else
     {
-        findFileStr = _filePosition.shortFilename;
+        findFileStr = (unsigned char *)_filePosition.shortFilename;
         convertToShortFilename(fileName, findFileStr);
         maxChars = 11;
     }

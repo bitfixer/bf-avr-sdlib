@@ -215,6 +215,10 @@ unsigned long getFirstCluster(struct dir_Structure *dir);
 void openFileForWriting(unsigned char *fileName, unsigned long dirCluster);
 unsigned char openFileForReading(unsigned char *fileName, unsigned long dirCluster);
 unsigned int getNextFileBlock();
+void writeBufferToFile(unsigned int bytesToWrite);
+void closeFile();
+
+void openDirectory(unsigned long firstCluster);
 
 struct dir_Structure *getNextDirectoryEntry();
 

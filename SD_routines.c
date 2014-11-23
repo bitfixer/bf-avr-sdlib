@@ -37,93 +37,91 @@
 //******************************************************************
 unsigned char SD_init(void)
 {
-unsigned char i, response, SD_version;
-unsigned int retry=0 ;
+    unsigned char i, response, SD_version;
+    unsigned int retry = 0 ;
 
-char test[20];
+    for(i = 0; i < 10; i++)
+        SPI_transmit(0xff);   //80 clock pulses spent before sending the first command
 
- for(i=0;i<10;i++)
-      SPI_transmit(0xff);   //80 clock pulses spent before sending the first command
+    SD_CS_ASSERT;
+    do
+    {
+      
+       response = SD_sendCommand(GO_IDLE_STATE, 0); //send 'reset & go idle' command
+       retry++;
+       if(retry>0x20) 
+          return 1;   //time out, card not detected
+       
+       //sprintf(test, "** %02X", response);
+       //transmitString(test);
+    } while(response != 0x01);
 
-SD_CS_ASSERT;
-do
-{
-  
-   response = SD_sendCommand(GO_IDLE_STATE, 0); //send 'reset & go idle' command
-   retry++;
-   if(retry>0x20) 
-   	  return 1;   //time out, card not detected
-   
-   //sprintf(test, "** %02X", response);
-   //transmitString(test);
-} while(response != 0x01);
+    SD_CS_DEASSERT;
+    SPI_transmit (0xff);
+    SPI_transmit (0xff);
 
-SD_CS_DEASSERT;
-SPI_transmit (0xff);
-SPI_transmit (0xff);
+    retry = 0;
 
-retry = 0;
+    SD_version = 2; //default set to SD compliance with ver2.x; 
+                    //this may change after checking the next command
+    do
+    {
+    response = SD_sendCommand(SEND_IF_COND,0x000001AA); //Check power supply status, mendatory for SDHC card
+    retry++;
+    if(retry>0xfe) 
+       {
+          TX_NEWLINE;
+          SD_version = 1;
+          _cardType = 1;
+          break;
+       } //time out
 
-SD_version = 2; //default set to SD compliance with ver2.x; 
-				//this may change after checking the next command
-do
-{
-response = SD_sendCommand(SEND_IF_COND,0x000001AA); //Check power supply status, mendatory for SDHC card
-retry++;
-if(retry>0xfe) 
-   {
-	  TX_NEWLINE;
-	  SD_version = 1;
-	  _cardType = 1;
-	  break;
-   } //time out
+    }while(response != 0x01);
 
-}while(response != 0x01);
+    retry = 0;
 
-retry = 0;
+    do
+    {
+    response = SD_sendCommand(APP_CMD,0); //CMD55, must be sent before sending any ACMD command
+    response = SD_sendCommand(SD_SEND_OP_COND,0x40000000); //ACMD41
 
-do
-{
-response = SD_sendCommand(APP_CMD,0); //CMD55, must be sent before sending any ACMD command
-response = SD_sendCommand(SD_SEND_OP_COND,0x40000000); //ACMD41
+    retry++;
+    if(retry>0xfe) 
+       {
+          TX_NEWLINE;
+          return 2;  //time out, card initialization failed
+       } 
 
-retry++;
-if(retry>0xfe) 
-   {
-      TX_NEWLINE;
-	  return 2;  //time out, card initialization failed
-   } 
-
-}while(response != 0x00);
+    }while(response != 0x00);
 
 
-retry = 0;
-_SDHC_flag = 0;
+    retry = 0;
+    _SDHC_flag = 0;
 
-if (SD_version == 2)
-{ 
-   do
-   {
-	 response = SD_sendCommand(READ_OCR,0);
-	 retry++;
-	 if(retry>0xfe) 
-     {
-       TX_NEWLINE;
-	   _cardType = 0;
-	   break;
-     } //time out
+    if (SD_version == 2)
+    { 
+       do
+       {
+         response = SD_sendCommand(READ_OCR,0);
+         retry++;
+         if(retry>0xfe) 
+         {
+           TX_NEWLINE;
+           _cardType = 0;
+           break;
+         } //time out
 
-   }while(response != 0x00);
+       }while(response != 0x00);
 
-   if(_SDHC_flag == 1) _cardType = 2;
-   else _cardType = 3;
-}
+       if(_SDHC_flag == 1) _cardType = 2;
+       else _cardType = 3;
+    }
 
-//SD_sendCommand(CRC_ON_OFF, OFF); //disable CRC; deafault - CRC disabled in SPI mode
-//SD_sendCommand(SET_BLOCK_LEN, 512); //set block size to 512; default size is 512
+    //SD_sendCommand(CRC_ON_OFF, OFF); //disable CRC; deafault - CRC disabled in SPI mode
+    //SD_sendCommand(SET_BLOCK_LEN, 512); //set block size to 512; default size is 512
 
 
-return 0; //successful return
+    return 0; //successful return
 }
 
 //******************************************************************
